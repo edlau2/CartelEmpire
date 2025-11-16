@@ -1,0 +1,40 @@
+#
+# This gets saved as:
+# /etc/systemd/system/ce-retals.service
+# Note that the working dir needs to be set to wherever
+# the js files are located on your machine...
+#
+# To enable and start as a service, from a bash prompt:
+#
+# sudo systemctl daemon-reload
+# sudo systemctl enable ce-retals..service
+# sudo systemctl start ce-retals..service
+#
+# To check status:
+#
+# systemctl status ce-retals.service
+#
+# View sys logs:
+#
+# journalctl -u ce-retals.service -f
+
+[Unit]
+Description=Node.js Monitoring Bot
+After=network.target
+
+[Service]
+WorkingDirectory=/path/to/these/files
+ExecStart=/usr/bin/node index.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+
+# Optional: log stderr/stdout to journald
+StandardOutput=journal
+StandardError=journal
+
+# If using nvm or a specific node binary:
+# ExecStart=/usr/bin/bash -lc "node index.js"
+
+[Install]
+WantedBy=multi-user.target
