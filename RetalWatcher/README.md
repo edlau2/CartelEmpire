@@ -6,14 +6,14 @@ This Node.js program periodically checks for attacks made against cartel members
 1. Copy the files from this directory into a folder of your choice.
    <details>
      <summary>Click for file list</summary>
-     1. ce-retals.service - only required to run as a service/daemon on Linux
-     2. config.json - Configurable options are set in here
-     3. defPersistent.json (not required, just a reference)
-     4. index.js - the main program
-     5. logger.js - handles logging to the console and/or a rotating log file.
-     6. persistent.json - will be created if it doesn't exist, same a defPersistent.json
-     7. persistentStore.js - handles saving to the persistent data store
-     8. webhookQueue.js - a queue to pace Discord requests, preventing 429 errors.
+     1. ce-retals.service - only required to run as a service/daemon on Linux<br>
+     2. config.js - Configurable options are set in here<br>
+     3. defPersistent.json (not required, just a reference)<br>
+     4. index.js - the main program<br>
+     5. logger.js - handles logging to the console and/or a rotating log file.<br>
+     6. persistent.json - will be created if it doesn't exist, same a defPersistent.json<br>
+     7. persistentStore.js - handles saving to the persistent data store<br>
+     8. webhookQueue.js - a queue to pace Discord requests, preventing 429 errors.<br>
    </details>
 2. You can run directly from a terminal as long as Node.js is installed. Simply type 'node index.js' 
 3. Ctrl-C will terminate, otherwise, it runs forever.
