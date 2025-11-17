@@ -1,11 +1,15 @@
-const { createWebhookQueue } = require("./webhookQueue");
-
-// Node 18+ has fetch built in. Else uncomment:
-//const fetch = require("node-fetch");
-// My install needs cross-fetch instead of node-fetch for some reason
-const fetch = require('cross-fetch');
 
 const config = require("./config.js");
+
+const { createWebhookQueue } = require("./webhookQueue");
+
+//const { EmbedBuilder } = require('discord.js');
+
+// Node 18+ has fetch built in. 
+// You can comment out the next two lines if running Node v18+
+const fetchMod = (config.requireCrossFetch == true) ? 'cross-fetch' : 'node-fetch';
+const fetch = global.fetch || require(fetchMod);
+
 const { createLogger } = require("./logger");
 const { loadStore, saveStore } = require("./persistentStore");
 
@@ -113,39 +117,54 @@ function embedFromAttack(attack) {
     let when = attack.created;
     let diffSecs = (now/1000) - Number(when);
 
-    let fightTimestamp = new Date((Number(when) * 1000)).toISOString();
+    let fightDate = new Date((Number(when) * 1000));
+    let fightTimestamp = toShortDateStr(fightDate); //new Date((Number(when) * 1000)).toISOString();
 
     let oppName = getNameFromId(attack.initiatorId);
+    let oppFullName = oppName + " [" + attack.initiatorId + "]";
     let defName = getFacMemberFromId(attack.targetId);
     let oppCartel = getCartelFromId(attack.initiatorCartelId);
 
-    let field1 = {
+    let atTimeField = {
+          "name": `When: ${fightTimestamp}`,
+          "value": '',
+          "inline": false
+          };
+    let attackerField = {
+          "name": 'Attacker',
+          "value": `[${oppFullName}](https://cartelempire.online/user/${attack.initiatorId})`,
+          "inline": true
+          };
+    let defenderField = {
           "name": 'Defender',
           "value": `${defName} [${attack.targetId}]`,
+          "inline": true
+          };
+    let attackerDetails = {
+          "name": 'Attacker Details',
+          "value": `\u200b\u200b\u200b\u200bRep: ${getRepFromId(attack.initiatorId)}\n` +
+                   `\u200b\u200b\u200b\u200bLevel: ${getLvlFromId(attack.initiatorId)}`,
           "inline": false
           };
-    let field2 = {
-          "name": 'Attacker',
-          "value": `${oppName}\nRep: ${getRepFromId(attack.initiatorId)}\nLevel: ${getLvlFromId(attack.initiatorId)}`,
-          "inline": false
-          };
-    let field3 = {
+    let logField = {
           "name": 'Attack Log',
-          "value": `["Attack Log"](https://cartelempire.online/Fight/${attack.id})`,
+          "value": `[View Log Here](https://cartelempire.online/Fight/${attack.id})`,
           //"value": `https://cartelempire.online/Fight/${attack.id}`,
           "inline": false
           };
 
+    let embedTitle = `Retal Available! Opponent:   ${oppFullName}`;
+
     let embedData =
     {
-      "title": "Retal Available!",
-      "description": `${oppName}: https://cartelempire.online/user/${attack.initiatorId}`,
+      "title": embedTitle,
+      //"title": `Retal Available!   [${oppFullName}](https://cartelempire.online/user/${attack.initiatorId})`,
+      "description": `[Profile/Attack link: ${oppFullName}](https://cartelempire.online/user/${attack.initiatorId})`,
       "color": 3447003,
       "fields": [
-            field1, field2, field3,
+            atTimeField, attackerField, defenderField, attackerDetails, logField
         ],
-        //timestamp: new Date().toISOString() 
-        timestamp: fightTimestamp
+      //timestamp: new Date().toISOString() 
     };
 
     return embedData;
@@ -188,6 +207,7 @@ async function processItem(attack) {
     // This just caches the data in a smaller format
     processUserInfoData(data);
     logger.log(`[processItem] Cached info for user id: ${oppId}`);
+    //logger.log(`[processItem] data: `, JSON.stringify(data));
 
     await sendDiscordNotification(attack);
 }

@@ -1,6 +1,7 @@
 // webhookQueue.js
-//const fetch = global.fetch || require("node-fetch");
-const fetch = global.fetch || require('cross-fetch');
+const config = require("./config.js");
+const fetchMod = (config.requireCrossFetch == true) ? 'cross-fetch' : 'node-fetch';
+const fetch = global.fetch || require(fetchMod);
 
 function createWebhookQueue({ minIntervalMs = 1000, logger }) {
   const pending = [];

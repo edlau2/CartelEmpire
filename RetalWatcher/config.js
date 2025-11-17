@@ -1,8 +1,12 @@
 module.exports = {
   // I hope these three are self-explanatory?
-  "api_key": "",
-  "discordWebhookUrl": "https://discord.com/api/webhooks/etc......",
+  "api_key": "CEB79213-5742-42F7-9C4",
+  "discordWebhookUrl": "https://discord.com/api/webhooks/935258884069810276/xZccxKcLj8_wJ3Co3FnyVt2cl7TlMOgWAjRqCVvCk4ZDER9zXDgH2h2nzEg_OXMgTYy6",
   "myCartelId": 84,
+
+  // This can be set to true to use cross-fetch instead of node-fetch,
+  // when running Node.js versions prior to version 18
+  "requireCrossFetch": false,
 
   // Will make an API call every checkAttackIntervalSecs seconds, for any new
   // attacks since those returned in the last check.
@@ -16,7 +20,7 @@ module.exports = {
   // to be made every time the program starts up, and can also always get the last
   // 100 attacks and not filter by the last date/time checked.
   "forceMemberUpdate": false,
-  "ignoreCreateDate": false,
+  "ignoreCreateDate": true,
 
   "getMembersUrl": "https://cartelempire.online/api/cartel?type=members&key=",
   "getAttacksUrl": "https://cartelempire.online/api/cartel?type=attacks",
