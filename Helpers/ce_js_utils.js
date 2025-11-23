@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.17
+// @version     1.18
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -17,7 +17,7 @@
 /*eslint no-multi-spaces: 0*/
 
 // Should match version above
-const thisLibVer = '1.17';
+const thisLibVer = '1.18';
 
 const  deepCopy = (src) => { return JSON.parse(JSON.stringify(src)); }
 
@@ -311,36 +311,37 @@ function ce_getItemsList(type, callback) {
 
 // ============= Display an alert that can time out ==============
 
-async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg) {
+async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
+    if (!optId) optId = 'xalert';
     addAlertStyles();
-    addAlertDiv();
+    addAlertDiv(optId);
 
-    $("#xalert .mainMsg").text(mainMsg);
-    if (btnMsg) $("#xalert button").text(btnMsg);
+    $(`#${optId} .mainMsg`).text(mainMsg);
+    if (btnMsg) $(`#${optId} button`).text(btnMsg);
     return await openModelessAlert(timeoutSecs);
 
-    async function openModelessAlert(timeoutSecs) {
-        $("#xalert").css("display", "block");
-        if (timeoutSecs) setTimeout(function() {$("#xalert").remove();}, timeoutSecs*1000);
+    async function openModelessAlert(timeoutSecs, optId) {
+        $(`#${optId}`).css("display", "block");
+        if (timeoutSecs) setTimeout(function() {$(`#${optId}`).remove();}, timeoutSecs*1000);
         return new Promise(resolve => {
-            $("#xalert-ok-btn").on('click', (e) => {resolve($("#xalert").remove())});
+            $(`button.xedx-ce-alert-btn`).on('click', (e) => {resolve($(`#${optId}`).remove())});
         });
     }
 
      var alertStylesAdded = false;
-     function addAlertDiv() {
-         if ($("#xalert").length > 0) return;
+     function addAlertDiv(optId) {
+         if ($(`#${optId}`).length > 0) return;
          let newDiv = `
-             <div id="xalert"><div class="alert-content">
+             <div id="${optId}" class="xalert-wrap"><div class="alert-content">
                  <p class='mainMsg'></p>
-                 <span class="xbtn-wrap"><button id="xalert-ok-btn" class="xedx-torn-btn" data-ret="true">OK</button></span>
+                 <span class="xbtn-wrap"><button id="xalert-ok-btn" class="xedx-ce-alert-btn xedx-torn-btn" data-ret="true">OK</button></span>
              </div></div>`;
          $("body").append(newDiv);
      }
      function addAlertStyles() {
          if (alertStylesAdded) return;
          GM_addStyle(`
-             #xalert {
+             div.xalert-wrap {
                  display: none;
                  position: fixed;
                  top: 50%;
@@ -356,7 +357,7 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg) {
                  font-family: arial;
                  z-index: 9999999;
             }
-            #xalert button {
+            div.xalert-wrap button {
                  margin: 10px 25px 10px 25px;
             }
             .mainMsg {
