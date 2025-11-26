@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.18
+// @version     1.20
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -17,9 +17,11 @@
 /*eslint no-multi-spaces: 0*/
 
 // Should match version above
-const thisLibVer = '1.18';
+const thisLibVer = '1.20';
 
 const  deepCopy = (src) => { return JSON.parse(JSON.stringify(src)); }
+
+const isValid = (value) => { return value !== undefined && value !== null; }
 
 // Enables the debug() log function, can be set by scripts as needed.
 var debugLoggingEnabled = GM_getValue("debugLoggingEnabled", false);
@@ -233,8 +235,29 @@ async function hashUrlToId(url, length = 7) {
 }
 
 // ======================= Generic Cartel Empire API call  ==============================
-// Success result callback sig: callback(response, status, xhr, id, param) {}
 
+const loadApiCalls = () => {
+    let activeApiCalls = [];
+    let data = localStorage.getItem('ceApiCalls');
+    if (!data) {
+        localStorage.setItem('ceApiCalls', JSON.stringify(activeApiCalls));
+    } else {
+        activeApiCalls = JSON.parse(data);
+    }
+    return activeApiCalls;
+}
+const updateApiTracker = (newEntry) => {
+    let now = parseInt(new Date().getTime() / 1000);
+    let activeApiCalls = loadApiCalls();
+    const newArray = activeApiCalls.filter(item => +now - +item.timestamp < 60);
+    if (newEntry) newArray.push(newEntry);
+
+    localStorage.setItem('ceApiCalls', JSON.stringify(newArray));
+    return newArray.length;
+}
+const getCountApiCalls = () => { return updateApiTracker(); }
+
+// Success result callback sig: callback(response, status, xhr, id, param) {}
 function ce_executeApiCall(category, id, type, callback, opts=null, param=null) {
     let idParam = id ? `id=${id}&` : '';
     const url = `https://cartelempire.online/api/${category}?${idParam}type=${type}&key=${api_key}`;
@@ -243,70 +266,43 @@ function ce_executeApiCall(category, id, type, callback, opts=null, param=null) 
         for (let idx=0; idx<keys.length; idx++) {
             let key = keys[idx], val = opts[key];
             url += `&${key}=${val}`;
-            //url += `&${keys[idx]}=${opts[keys[idx]]}`;
         }
     }
+
     $.ajax({
         url: url,
         type: 'GET',
         success: function (response, status, xhr) {
-            if (response.error) { return log("ajax error: ", response); }
+            if (response.error) { return log("ajax error: ", response.error); }
             callback(response, status, xhr, id, param);
         },
-        //error: function (jqXHR, textStatus, errorThrown) {
-        //    console.error("Error in ajax lookup: ", textStatus,
-        //                  "\nError jqXHR: ", jqXHR, "\nError thrown: ", errorThrown);
-        //    callback({error: jqXHR}, jqXHR.statusText, jqHXR, id);
-        //},
         error: function(jqXHR, textStatus, errorThrown) {
+            // const code = response.req ? response.req.status: 'unknown';
+            // debug("[startStakeoutsCb] ERROR status code: ",
+            //       code, response.error);
+
             console.error("AJAX Error:", (jqXHR ? jqXHR.responseText : 'unknown'),
                 "\nRequest obj:", jqXHR);
-            // You can also access responseJSON if the server sent JSON and it failed to parse
-            //if (jqXHR.responseJSON) {
-            //    log("Response JSON:", jqXHR.responseJSON);
-            //}
             callback({ req: jqXHR, error: (jqXHR ? jqXHR.responseText : 'unknown') });
         }
     });
+    let now = parseInt(new Date().getTime() / 1000);
+    let apiEntry = { category: category, id: id, type: type, timestamp: now };
+    updateApiTracker(apiEntry);
 }
 
 // ==================== Generic Cartel Empire API call for user stats ==============================
 // Success result callback sig: callback(response, status, xhr, id) {}
 // type is one or more of Basic, Advanced, Cooldowns, Battle Stats, Status, Attacks, Events, Graph
+//
 function ce_getUserStats(id, type, callback) {
     if (!id) return console.error("[ce_getUserStats] Error: id is required");
-    const url = `https://cartelempire.online/api/user?id=${id}&type=${type}&key=${api_key}`;
-    $.ajax({
-        url: url,
-        type: 'GET',
-        success: function (response, status, xhr) {
-            if (response.error) { return log("ajax error: ", response); }
-            callback(response, status, xhr, id);
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-            console.error("Error in ajax lookup: ", (jqXHR ? jqXHR.responseText : 'unknown'),
-                "\nRequest obj:", jqXHR);
-            callback({ req: jqXHR, error: (jqXHR ? jqXHR.responseText : 'unknown') });
-        }
-    });
+    ce_executeApiCall('user', id, type, callback);
 }
 
 // Similar, for items
 function ce_getItemsList(type, callback) {
-    const url = `https://cartelempire.online/api/items?type=${type}&key=${api_key}`;
-    $.ajax({
-        url: url,
-        type: 'GET',
-        success: function (response, status, xhr) {
-            if (response.error) { return log("ajax error: ", response); }
-            callback(response, status, xhr);
-        },
-        error: function (jqXHR, textStatus, errorThrown) {
-            console.error("Error in ajax lookup: ", (jqXHR ? jqXHR.responseText : 'unknown'),
-                          "\nError jqXHR: ", jqXHR, "\nError thrown: ", errorThrown);
-            callback({ req: jqXHR, error: (jqXHR ? jqXHR.responseText : 'unknown') });
-        }
-    });
+    ce_executeApiCall('items', null, type, callback);
 }
 
 // ============= Display an alert that can time out ==============
@@ -318,14 +314,16 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
 
     $(`#${optId} .mainMsg`).text(mainMsg);
     if (btnMsg) $(`#${optId} button`).text(btnMsg);
-    return await openModelessAlert(timeoutSecs);
+    return await openModelessAlert(timeoutSecs, optId);
 
     async function openModelessAlert(timeoutSecs, optId) {
         $(`#${optId}`).css("display", "block");
-        if (timeoutSecs) setTimeout(function() {$(`#${optId}`).remove();}, timeoutSecs*1000);
+        if (timeoutSecs) { setTimeout(onAlertTimeout, (+timeoutSecs * 1000), optId); }
         return new Promise(resolve => {
-            $(`button.xedx-ce-alert-btn`).on('click', (e) => {resolve($(`#${optId}`).remove())});
+            $(`button.xedx-ce-alert-btn`).on('click', (e) => { resolve($(`#${optId}`).remove()); });
         });
+
+        function onAlertTimeout(optId) { $(`#${optId}`).remove(); }
     }
 
      var alertStylesAdded = false;
@@ -334,7 +332,8 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
          let newDiv = `
              <div id="${optId}" class="xalert-wrap"><div class="alert-content">
                  <p class='mainMsg'></p>
-                 <span class="xbtn-wrap"><button id="xalert-ok-btn" class="xedx-ce-alert-btn xedx-torn-btn" data-ret="true">OK</button></span>
+                 <span class="xbtn-wrap">` +
+                    `<button id="xalert-ok-btn" class="xedx-ce-alert-btn xedx-torn-btn" data-id="${optId}" data-ret="true">OK</button></span>
              </div></div>`;
          $("body").append(newDiv);
      }
@@ -342,16 +341,21 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
          if (alertStylesAdded) return;
          GM_addStyle(`
              div.xalert-wrap {
-                 display: none;
+                 /* display: none; */
                  position: fixed;
                  top: 50%;
                  left: 50%;
                  width: 300px;
                  transform: translate(-50%, -50%);
-                 background-color: var(--default-white-color);
+                 /* background-color: var(--bs-body-color); */
+                 background-color: var(--bs-body-bg);
+
+                 /* box-shadow: inset 11px 10px 19px 9px rgb(245 245 245 / 60%); */
+                 /* box-shadow: 6px 6px 16px 9px rgb(241 235 235 / 80%); */
+                 box-shadow: 10px 4px 19px 12px rgb(245 245 245 / 60%);
+
                  padding: 20px 20px 0px 20px;
                  border-radius: 10px;
-                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
                  color: var(--default-black-color);
                  font-size: 14px;
                  font-family: arial;
