@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.20
+// @version     1.21
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -17,7 +17,7 @@
 /*eslint no-multi-spaces: 0*/
 
 // Should match version above
-const thisLibVer = '1.20';
+const thisLibVer = '1.21';
 
 const  deepCopy = (src) => { return JSON.parse(JSON.stringify(src)); }
 
@@ -306,21 +306,28 @@ function ce_getItemsList(type, callback) {
 }
 
 // ============= Display an alert that can time out ==============
-
-async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
-    if (!optId) optId = 'xalert';
+// opts:
+//    mainMsg - Main message displayed in "div#<optId> p.p1"
+//    timeoutSecs - When to auto-remove, secs
+//    btnMsg - Text on button
+//    optId - ID of main alert div
+//    optBg - class for background, must be added by caller
+//
+const defOpts = { mainMsg: 'Alert!', timeoutSecs: 30, btnMsg: 'OK', optId: 'xalert', optBg: "def-bg" };
+async function alertWithTimeout(opts = defOpts) { //mainMsg, timeoutSecs, btnMsg, opts) {
     addAlertStyles();
-    addAlertDiv(optId);
+    addAlertDiv(opts.optId);
+    $(`#${opts.optId}`).addClass(opts.optBg);
 
-    $(`#${optId} .mainMsg`).text(mainMsg);
-    if (btnMsg) $(`#${optId} button`).text(btnMsg);
-    return await openModelessAlert(timeoutSecs, optId);
+    $(`#${opts.optId} .mainMsg`).text(opts.mainMsg);
+    $(`#${opts.optId} button`).text(opts.btnMsg);
+    return await openModelessAlert(opts);
 
-    async function openModelessAlert(timeoutSecs, optId) {
-        $(`#${optId}`).css("display", "block");
-        if (timeoutSecs) { setTimeout(onAlertTimeout, (+timeoutSecs * 1000), optId); }
+    async function openModelessAlert(opts) {
+        $(`#${opts.optId}`).css("display", "block");
+        if (opts.timeoutSecs) { setTimeout(onAlertTimeout, (+opts.timeoutSecs * 1000), opts.optId); }
         return new Promise(resolve => {
-            $(`button.xedx-ce-alert-btn`).on('click', (e) => { resolve($(`#${optId}`).remove()); });
+            $(`button.xedx-ce-alert-btn`).on('click', (e) => { resolve($(`#${opts.optId}`).remove()); });
         });
 
         function onAlertTimeout(optId) { $(`#${optId}`).remove(); }
@@ -331,9 +338,10 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
          if ($(`#${optId}`).length > 0) return;
          let newDiv = `
              <div id="${optId}" class="xalert-wrap"><div class="alert-content">
-                 <p class='mainMsg'></p>
-                 <span class="xbtn-wrap">` +
-                    `<button id="xalert-ok-btn" class="xedx-ce-alert-btn xedx-torn-btn" data-id="${optId}" data-ret="true">OK</button></span>
+                 <p class='p1 mainMsg'></p>
+                 <span class="xbtn-wrap">
+                     <button id="xalert-ok-btn" class="xedx-ce-alert-btn xedx-torn-btn" data-id="${optId}" data-ret="true">OK</button>
+                 </span>
              </div></div>`;
          $("body").append(newDiv);
      }
@@ -347,12 +355,6 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
                  left: 50%;
                  width: 300px;
                  transform: translate(-50%, -50%);
-                 /* background-color: var(--bs-body-color); */
-                 background-color: var(--bs-body-bg);
-
-                 /* box-shadow: inset 11px 10px 19px 9px rgb(245 245 245 / 60%); */
-                 /* box-shadow: 6px 6px 16px 9px rgb(241 235 235 / 80%); */
-                 box-shadow: 10px 4px 19px 12px rgb(245 245 245 / 60%);
 
                  padding: 20px 20px 0px 20px;
                  border-radius: 10px;
@@ -360,6 +362,14 @@ async function alertWithTimeout(mainMsg, timeoutSecs, btnMsg, optId) {
                  font-size: 14px;
                  font-family: arial;
                  z-index: 9999999;
+            }
+            div.xalert-wrap.def-bg {
+                 /* background-color: var(--bs-body-color); */
+                 background-color: var(--bs-body-bg);
+
+                 /* box-shadow: inset 11px 10px 19px 9px rgb(245 245 245 / 60%); */
+                 /* box-shadow: 6px 6px 16px 9px rgb(241 235 235 / 80%); */
+                 box-shadow: 10px 4px 19px 12px rgb(245 245 245 / 60%);
             }
             div.xalert-wrap button {
                  margin: 10px 25px 10px 25px;
