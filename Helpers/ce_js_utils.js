@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.22
+// @version     1.23
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -17,7 +17,7 @@
 /*eslint no-multi-spaces: 0*/
 
 // Should match version above
-const thisLibVer = '1.22';
+const thisLibVer = '1.23';
 
 const  deepCopy = (src) => { return JSON.parse(JSON.stringify(src)); }
 
@@ -675,6 +675,29 @@ const removeSpinner = (spinnerId) => {
     $(sel).remove();
 }
 
+function addSpinLoaderStyles() {
+    GM_addStyle(`
+        .spinLoader {
+          border: 16px solid #f3f3f3; /* Light grey */
+          border-top: 16px solid #3498db; /* Blue */
+          border-radius: 50%;
+          width: 120px;
+          height: 120px;
+          animation: spin 2s linear infinite;
+          z-index: 9999999;
+          position: fixed !important;
+          top: 50%  !important;
+          left: 50% !important;
+
+        }
+
+        @keyframes spin {
+          0% { transform:  translate(-50%,-50%) rotate(0deg); }
+          100% { transform:  translate(-50%,-50%) rotate(360deg); }
+        }
+    `);
+}
+
 // ===================== Save/restore actual position =======================
 // I typically use with floating divs that are children of a very high
 // level element, such as #mainContainer. Pass the id of the outermost
@@ -893,7 +916,6 @@ function addToolTipStyle() {
         }
     `);
 }
-
 
 
 
