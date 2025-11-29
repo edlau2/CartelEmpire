@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.21
+// @version     1.22
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -17,7 +17,7 @@
 /*eslint no-multi-spaces: 0*/
 
 // Should match version above
-const thisLibVer = '1.21';
+const thisLibVer = '1.22';
 
 const  deepCopy = (src) => { return JSON.parse(JSON.stringify(src)); }
 
@@ -306,19 +306,30 @@ function ce_getItemsList(type, callback) {
 }
 
 // ============= Display an alert that can time out ==============
-// opts:
+// alertWithTimeout params:
 //    mainMsg - Main message displayed in "div#<optId> p.p1"
 //    timeoutSecs - When to auto-remove, secs
 //    btnMsg - Text on button
 //    optId - ID of main alert div
 //    optBg - class for background, must be added by caller
 //
+// mergeObjs(objA, abjB) - takes all params in objB that are in objA, and sets in a copy of A, Anything inA not
+// in B also placed in the copy. So, returns objA updated with anything alo in objB.
+//
+function mergeObjs(A, B) {
+    const resObj = JSON.parse(JSON.stringify(A));
+    Object.keys(A).forEach(key => {
+        if (B[key]) resObj[key] = B[key];
+    });
+    return resObj;
+}
+
 const defOpts = { mainMsg: 'Alert!', timeoutSecs: 30, btnMsg: 'OK', optId: 'xalert', optBg: "def-bg" };
-async function alertWithTimeout(opts = defOpts) { //mainMsg, timeoutSecs, btnMsg, opts) {
+async function alertWithTimeout(params = defOpts) { //mainMsg, timeoutSecs, btnMsg, opts) {
+    const opts = mergeObjs(defOpts, params);
     addAlertStyles();
     addAlertDiv(opts.optId);
     $(`#${opts.optId}`).addClass(opts.optBg);
-
     $(`#${opts.optId} .mainMsg`).text(opts.mainMsg);
     $(`#${opts.optId} button`).text(opts.btnMsg);
     return await openModelessAlert(opts);
@@ -333,8 +344,8 @@ async function alertWithTimeout(opts = defOpts) { //mainMsg, timeoutSecs, btnMsg
         function onAlertTimeout(optId) { $(`#${optId}`).remove(); }
     }
 
-     var alertStylesAdded = false;
-     function addAlertDiv(optId) {
+    var alertStylesAdded = false;
+    function addAlertDiv(optId) {
          if ($(`#${optId}`).length > 0) return;
          let newDiv = `
              <div id="${optId}" class="xalert-wrap"><div class="alert-content">
@@ -345,7 +356,7 @@ async function alertWithTimeout(opts = defOpts) { //mainMsg, timeoutSecs, btnMsg
              </div></div>`;
          $("body").append(newDiv);
      }
-     function addAlertStyles() {
+    function addAlertStyles() {
          if (alertStylesAdded) return;
          GM_addStyle(`
              div.xalert-wrap {
@@ -396,6 +407,83 @@ async function alertWithTimeout(opts = defOpts) { //mainMsg, timeoutSecs, btnMsg
         `);
     alertStylesAdded = true;
     }
+}
+
+// ========================================================================
+function toShortDateStr(date) {
+    const mediumTime = new Intl.DateTimeFormat("en-GB", {
+      timeStyle: "medium",
+      hourCycle: "h24",
+    });
+    const shortDate = new Intl.DateTimeFormat("en-GB", {
+      dateStyle: "short",
+    });
+
+    let dt = shortDate.format(date);
+    let parts = dt.split('/');
+    let yr = parts[2].slice(2);
+    dt = parts[0] + "/" + parts[1] + "/" + yr;
+
+    const formattedDate = dt + ", " + mediumTime.format(date);
+    return formattedDate;
+}
+
+const tinyTimeStr = (tm) => {
+    let dt = new Date(tm);
+    const mediumTime = new Intl.DateTimeFormat("en-GB", {
+      timeStyle: "medium",
+      hourCycle: "h24",
+    });
+    return mediumTime.format(dt);
+}
+
+const tinyDateStr = (date, showYear=false) => {
+    debug("[overview] tinyDateStr: ", date);
+    const shortDate = new Intl.DateTimeFormat("en-GB", {
+      dateStyle: "short",
+    });
+
+    let dt = shortDate.format(date);
+    let parts = dt.split('/');
+    let yr = parts[2].slice(2);
+    dt = parts[0] + "/" + parts[1];
+    if (showYear == true) dt += "/" + yr;
+
+    return dt;
+}
+
+const timeStamp = () => { return toShortDateStr(new Date()); }
+
+// Return time as 'd days, h hours, m minutes, s seconds' from a seconds value
+const sformat = (s) => {
+    var fm = [
+        Math.floor(s / (3600 * 24)), Math.floor(s % (3600 * 24) / 3600),
+        Math.floor(s % 3600 / 60), Math.floor(s % 60)
+    ];
+
+    // map over array
+    return $.map(fm, function(v, i) {
+        if (Boolean(v)) {
+            if (i === 0) v = plural(v, "day");
+            else if (i === 1) v = plural(v, "hour");
+            else if (i === 2) v = plural(v, "minute");
+            else if (i === 3) v = plural(v, "second");
+            return v;
+        }
+    }).join(', ');
+}
+
+const plural = (value, unit) => {
+    if (value === 1) {
+        return value + " " + unit;
+    } else if (value > 1) {
+        return value + " " + unit + "s";
+    }
+}
+
+const capitalize = (word) => {
+    if (typeof word !== 'string' || word.length === 0) return word;
+    return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
 // ========================================================================
