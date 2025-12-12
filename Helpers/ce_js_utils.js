@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.23
+// @version     1.24
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -17,7 +17,7 @@
 /*eslint no-multi-spaces: 0*/
 
 // Should match version above
-const thisLibVer = '1.23';
+const thisLibVer = '1.24';
 
 const  deepCopy = (src) => { return JSON.parse(JSON.stringify(src)); }
 
@@ -259,6 +259,11 @@ const getCountApiCalls = () => { return updateApiTracker(); }
 
 // Success result callback sig: callback(response, status, xhr, id, param) {}
 function ce_executeApiCall(category, id, type, callback, opts=null, param=null) {
+    if (!navigator.onLine) {
+        debug("[ce_executeApiCall] trying to send when offline!");
+        callback({error: "offline"}, "error", {statusText: "offline"}, id, param);
+        return;
+    }
     let idParam = id ? `id=${id}&` : '';
     const url = `https://cartelempire.online/api/${category}?${idParam}type=${type}&key=${api_key}`;
     if (opts != null) {
@@ -281,9 +286,13 @@ function ce_executeApiCall(category, id, type, callback, opts=null, param=null) 
             // debug("[startStakeoutsCb] ERROR status code: ",
             //       code, response.error);
 
-            console.error("AJAX Error:", (jqXHR ? jqXHR.responseText : 'unknown'),
-                "\nRequest obj:", jqXHR);
-            callback({ req: jqXHR, error: (jqXHR ? jqXHR.responseText : 'unknown') });
+            console.error("AJAX Error:",
+                          (jqXHR ? (jqXHR.responseText ? jqXHR.responseText : 'unknown') : 'no jqHXR'),
+                          "\nCode: ", (jqXHR ? (jqXHR.statusCode() ? jqXHR.statusCode() : 'unknown') : 'no jqHXR'),
+                          "\nStatus: ", (jqXHR ? (jqXHR.statusText ? jqXHR.statusText : 'unknown') : 'no jqHXR'),
+                          "\nRequest obj:", jqXHR);
+
+            callback({ req: jqXHR, error: (jqXHR ? jqXHR.statusText : 'unknown') });
         }
     });
     let now = parseInt(new Date().getTime() / 1000);
@@ -360,7 +369,6 @@ async function alertWithTimeout(params = defOpts) { //mainMsg, timeoutSecs, btnM
          if (alertStylesAdded) return;
          GM_addStyle(`
              div.xalert-wrap {
-                 /* display: none; */
                  position: fixed;
                  top: 50%;
                  left: 50%;
@@ -589,6 +597,239 @@ const simulateMouseClick = (targetNode) => {
         clickEvent.initEvent (eventType, true, true);
         node.dispatchEvent (clickEvent);
     }
+}
+
+//
+// Functions to attach a context menu to an element.
+//
+// 'selector' is the elemt to handle the right-click.
+// 'menuID' is the ID of the menu.
+// If 'noSample' is true (the default), will be added without the sample item.
+//
+// It is set up so that clicking outside of it will close the menu.
+// You can add menu items using the selector $("#<menuId > ul").append(li);
+// Add handlers for them, or create with <a href>'s. To make sure the
+// menu itself is hidden after an LI click, if not changing pages, you
+// can call "cmHideShow(menuSel, targetSel);", the two params are the
+// menu selector, and target selector, passed when the menu was creatwd.
+//
+// An options object may be passed in. Options that are understood:
+// options  [
+//  filter: <function>
+//  classOverRide: <class name>
+//  itemArray: [li, li, li, ...]
+//  noSample: true to remove sample LI (default)
+// }
+//
+// The filter function will be called first, if it return true
+// then nothing else is done. Otherwise, event propogation is stopped
+// and the menu is hidden.
+//
+// classOverRide, if provided, will replacethe default .context-menu
+// class and it's descendents, .context-menu > ul and ul > li
+//
+// Returns the menu's selector on success, undefined otherwise.
+//
+var contextStylesAdded = false;
+function installContextMenu(selector, menuId, options) {
+    addContextStyles();
+    let noSample = true, filterCb = undefined, customClass = undefined;
+    if (options) {
+        noSample = (options.noSample == undefined) ? true : options.noSample;
+        filterCb = options.filter;
+        customClass = options.classOverRide;
+    };
+
+    const cmHtml = `<div id="` + menuId + `" class="` +
+                        (customClass ? customClass : "context-menu") +
+                        ` ctxhide">
+                        <ul><li class="x-sample"><a href="#">Sample</a></li></ul>
+                    </div`;
+
+    let menuSelector = "#" + menuId;
+    if ($(menuSelector).length) {return log("Element ", menuId, " Already exists!");}
+    if (!$(selector).length) {return log("Target selector ", selector, " not found!");}
+
+    $(selector).after(cmHtml);
+
+    // Add handlers for right-click - hide or show the menu
+    let params = {cmSel: menuSelector, targetSel: selector, filter: filterCb};
+    $(selector).on('contextmenu', params, handleCmRightClick);
+    $(menuSelector).on('contextmenu', params, handleCmRightClick);
+
+    // The 'sample' li is just to give an indication it worked,
+    // other than the log messages. Clicking it removes it.
+    let sampleSel = menuSelector + " > ul > li.x-sample";
+    if (noSample)
+        $(sampleSel).remove();
+    else
+        $(sampleSel).on('click', {sel: sampleSel, rootId: menuId}, cmRemoveSample);
+
+    if (options.itemList) {
+        let list = $((menuSelector + " > ul"));
+        options.itemList.forEach(item => { $(list).append(item); });
+    }
+
+    // Add handler for clicks outside of the menu - hide menu
+    cmHandleOutsideClicks(menuId);
+
+    debug("Context menu '", menuSelector, " installed!");
+
+    return ($(menuSelector).length > 0) ? menuSelector : undefined;
+}
+
+// Helper for LI's in the list. If the menu has a border-radius, matching
+// it on the first and last LI's in the menu looks much nicer when hovering.
+// These calls set that. The target is the LI to set the radius on, the
+// matchSel is the elementto get the radius from. Can be elements or
+// selectors.
+function matchTopBorderRadius(targetSel, matchSel) {
+    let radius = $(matchSel).css("border-radius");
+    let radiusStr = radius + " " + radius + " 0px 0px";
+    $(targetSel).css("border-radius", radiusStr);
+}
+
+function matchBottomBorderRadius(targetSel, matchSel) {
+    let radius = $(matchSel).css("border-radius");
+    let radiusStr = "0px 0px " + radius + " " + radius;
+    $(targetSel).css("border-radius", radiusStr);
+}
+
+function handleCmRightClick(event) {
+    let menuSel = event.data.cmSel;
+    let targetSel = event.data.targetSel;
+    let filterFn = event.data.filter;
+
+    if (filterFn) {
+        if (filterFn(event)) {
+            //event.preventDefault();
+            return;
+        }
+    }
+
+    event.preventDefault();
+    cmHideShow(menuSel, targetSel);
+}
+
+function cmHideShow(cmSelector, targetSelector) {
+    let ctxVisible = $(cmSelector).hasClass("ctxshow");
+    if (ctxVisible) {
+        $(cmSelector).removeClass("ctxshow").addClass("ctxhide");
+    } else {
+        let x = $(targetSelector).css("left");
+        let y = event.clientY;
+
+        if (!$(cmSelector).hasClass("no-pos")) {
+            $(cmSelector).css("left", x.toString() + "px");
+            $(cmSelector).css("top", y.toString() + "px");
+        }
+
+        $(cmSelector).removeClass("ctxhide").addClass("ctxshow");
+    }
+}
+
+function cmHandleOutsideClicks(cmId) {
+    $("html").click(function (e) {
+        let menu = document.getElementById(cmId)
+        if (e.target != menu) {
+            if ($(menu).hasClass("ctxshow"))
+                $(menu).removeClass("ctxshow").addClass("ctxhide");
+            if (!$(menu).hasClass("ctxhide"))
+                $(menu).addClass("ctxhide");
+        }
+    });
+}
+
+function cmRemoveSample(event) {
+    let liSel = event.data.sel;
+    let menuId = event.data.rootId;
+    let msgText = 'This will remove this sample menu item.\nTo add ' +
+        'new ones, use the sytax $("#' + menuId + ' > ul").append(<node/html>);\n' +
+        'Go ahead and remove this menu item?';
+    if (confirm(msgText))
+        $(liSel).remove();
+}
+
+function addContextStyles() {
+    if (contextStylesAdded == true) return;
+    GM_addStyle(`
+        .context-wrapper {
+            border: 1px solid red;
+        }
+        .context-menu {
+            position: absolute;
+            text-align: center;
+            background: lightgray;
+            margin: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999999;
+        }
+        .context-border {
+            border: 1px solid black;
+            border-radius: 15px;
+        }
+
+        .ctxhide {display: none;}
+        .ctxshow {display: block}
+
+        .context-menu ul {
+            padding: 0px;
+            margin: 0px;
+            min-width: 150px;
+            list-style: none;
+            border: 1px solid black;
+        }
+
+        .context-menu ul li {
+            border-top: 1px solid black;
+
+        }
+
+        .context-menu ul li-ex {
+            border: 1px solid black;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #555;
+            color: var(--btn-color);
+            text-shadow: 0 1px 0 #FFFFFF40;
+            text-shadow: var(--btn-text-shadow);
+            background: linear-gradient(180deg, #DEDEDE 0%, #F7F7F7 25%, #CFCFCF 60%, #E7E7E7 78%, #D9D9D9 100%);
+            background: var(--btn-background);
+            border: 1px solid #aaa;
+            border: var(--btn-border);
+            vertical-align: middle;
+        }
+
+        .context-menu ul li a {
+            padding-bottom: 7px;
+            padding-top: 7px;
+            text-decoration: none;
+            color: black;
+            display: block;
+        }
+
+        .context-menu ul li:hover {
+            background: darkgray;
+        }
+        .x-centered {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          /* bring your own prefixes */
+          transform: translate(-50%, -50%);
+        }
+        .x-box {
+            z-index: 20;
+            width: 20px;
+            height: 20px;
+            border: 2px solid;
+            border-color: black;
+            display: block;
+        }
+    `);
+    contextStylesAdded = true;
 }
 
 // ========================= Draggable support =========================
