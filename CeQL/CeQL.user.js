@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CeQL
 // @namespace    http://tampermonkey.net/
-// @version      1.03
+// @version      1.05
 // @description  Customizes numerous pages, for better quality of life, all configurable...
 // @author       xedx [55266]
 // @match        https://cartelempire.online/*
@@ -256,30 +256,32 @@
 
     // Some TM menu choices for debugging stuff until in the UI
     if (typeof GM_registerMenuCommand === 'function') {
-        GM_registerMenuCommand('Alert with timeout', function () {
-            debug(`[stakeout][handleTenSecTimer] visible: `, pageIsVisible);
-            let timeout = 30;
-            let id = 42;
-            if ($(`#alert-${id}`).length > 0) return;
 
-            let msg = "Test Function";
-            // if (pageIsVisible == true) {
-            //     msg = msg + `\nThis alert will go away in ${timeout} seconds.`;
-            // } else {
-            //     msg = msg + `\nPage not visible? This will go away in ${timeout} secs.`;
-            // }
-            const opts = { "mainMsg": msg, "timeoutSecs": timeout, "optId": `alert-${id}`, "optBg": 'xalertBg' };
-            alertWithTimeout(opts);
-            $(`#alert-${id} .p1`).after($(`<p class="p2">This alert will go away in ${timeout} seconds.</p>`));
-            setTimeout(updateAlert, 1000, id, --timeout);
-            debug(`[stakeout][handleTenSecTimer]: alert node: `, $(`#alert-${id}`), " opts: ", opts);
+//         GM_registerMenuCommand('Alert with timeout', function () {
+//             debug(`[stakeout][handleTenSecTimer] visible: `, pageIsVisible);
+//             let timeout = 30;
+//             let id = 42;
+//             if ($(`#alert-${id}`).length > 0) return;
 
-            function updateAlert(id, timeout) {
-                if (timeout <= 0 || !$(`#alert-${id}`).length) return;
-                $(`#alert-${id} .p2`).text(`This alert will go away in ${timeout} seconds.`);
-                setTimeout(updateAlert, 1000, id, --timeout);
-            }
-        });
+//             let msg = "Test Auto-Close, Modeless alert";
+//             const opts = { "mainMsg": msg, "timeoutSecs": timeout, "optId": `alert-${id}`, "optBg": 'xalertBg' };
+//             alertWithTimeout(opts);
+//             $(`#alert-${id} .p1`).after($(`<p class="p2">This alert will go away in ${timeout} seconds.</p>`));
+//             setTimeout(updateAlert, 1000, id, --timeout);
+//             debug(`[stakeout][handleTenSecTimer]: alert node: `, $(`#alert-${id}`), " opts: ", opts);
+
+//             function updateAlert(id, timeout) {
+//                 if (timeout <= 0 || !$(`#alert-${id}`).length) return;
+//                 $(`#alert-${id} .p2`).text(`This alert will go away in ${timeout} seconds.`);
+//                 setTimeout(updateAlert, 1000, id, --timeout);
+//             }
+//         });
+
+        // GM_registerMenuCommand('Job Alert', function () {
+        //     jobAlerter.setOption("timeout", 60);
+        //     jobAlerter.sendAlert();
+        // });
+
         // GM_registerMenuCommand('Export whole IndexedDB', dbExportWholeDB);
         // GM_registerMenuCommand('Export single store', dbExportOneStorePrompt);
         // GM_registerMenuCommand('Import from backup file', dbImportFromFile);
@@ -1873,6 +1875,13 @@
                     align-content: center;
                     display: flex;
                     flex-flow: row wrap;
+                    height: 24px !important;
+                    align-content: center;
+                    display: flex;
+                    flex-flow: row wrap;
+                    text-align: center;
+                    line-height: 24px !important;
+                    padding: 0px 10px 0px 10px;
                 }
             `);
         }
@@ -3196,7 +3205,7 @@
         }
 
         var cStates = JSON.parse(GM_getValue('cStates', JSON.stringify({})));
-        const savecStates = () => { GM_setValue('cStates', JSON.stringify(cStates)); };
+        const savecStates = () => { debug("[savecStates]: ", cStates); GM_setValue('cStates', JSON.stringify(cStates)); };
         if (Object.keys(cStates).length == 0) {
             let keys = Object.keys(caretSelects);
             for (let idx=0; idx<keys.length; idx++) {
@@ -3248,9 +3257,12 @@
             }
             $(target).slideToggle("slow");
             $(node).toggleClass('fa-caret-down fa-caret-right');
+            debug("[handleCaret] cStates: ", idx, area, " before: ", cStates[area]);
             let state = $(node).hasClass('fa-caret-down') ? 'fa-caret-down' : 'fa-caret-right';
             cStates[area][idx] = state;
             savecStates();
+            debug("[handleCaret] cStates: ", idx,  area, " after: ", cStates[area]);
+            debug("[handleCaret] cStates: ", cStates);
         }
 
         function addCaretForObject(obj) {
@@ -3267,13 +3279,21 @@
                     $(node).append(el);
                     let key = idx.toString();
                     let state = cStates[area] ? cStates[area][key] : null;
+                    debug("addCaret cState: ", state, idx, area, key);
                     if (!state) {
+                        debug("default cState, not saved: ", area, key, idx, cStates[area]);
                         state = "fa-caret-down";
-                        cStates[area] = {};
+                        if (!cStates[area]) cStates[area] = {};
                         cStates[area][key] = state;
+                        cStates[area]["enabled"] = true;
                         updcStates = true
-                    } else if (cStates[area].enabled == true && state && state == 'fa-caret-right') {
-                        handleCaret(null, $(node).find('i'));
+                    } else if (cStates[area].enabled == true && state) { // && state == 'fa-caret-right') {
+                        debug("cState, saved: ", area, state, key, idx, cStates[area]);
+                        if (state == 'fa-caret-right') {
+                            debug("changing cState");
+                            handleCaret(null, $(node).find('i'));
+                            debug("cState, after: ", cStates);
+                        }
                     }
 
                     // First header has an option to save caret position, and in the market,
@@ -3284,6 +3304,8 @@
                         let saveCb = $(newNode);
                         $(node).find(".col-caret").before(newNode);
                         let checked = cStates[area].enabled;
+                        debug("Saved cState, checked ", checked, area, cStates[area], cStates);
+                        debug("[cState] idx: ", idx, " node:", $(node));
                         $(node).find('input').prop('checked', checked);;
                         $(node).find('input').attr('data-area', area);
                         $(node).find('input').on('change', handleCbSaveOpt);
