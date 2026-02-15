@@ -2067,6 +2067,12 @@
             lastUpd = toShortDateStr(d);
         }
 
+        if (!tarijaRank9s)
+            tarijaRank9s = JSON.parse(GM_getValue("tarijaRank9s", JSON.stringify({})));
+
+        if (tarijaRank9s[memberEntry[`${memberEntry.name}`]])
+            $(`#tr-${team}-${memberNum}`).addClass("tarija");
+
         $(`#tr-${team}-${memberNum} > td.tdname`).text(memberEntry.name);
         $(`#tr-${team}-${memberNum} > td.tdlvl`).text(memberEntry.lvl);
         $(`#tr-${team}-${memberNum} > td.tdrnk`).text(memberEntry.rank);
@@ -2210,7 +2216,13 @@
         }
     }
 
+    // Will be {"name": "id"}
+    var tarijaRank9s;
+
     function updateMemberStats(teamNum, retries=0, retries2=0) {
+        log("[expOverview][*** updateMemberStats]");
+        if (!tarijaRank9s) tarijaRank9s = JSON.parse(GM_getValue("tarijaRank9s", JSON.stringify({})));
+
         let panes = $(".tab-pane.active");
         let plen = $(panes).length;
         let thisPaneId = $($(".tab-pane.active")[plen - 1]).attr("id");
@@ -2221,7 +2233,7 @@
 
         if ($(`#v-content-team${teamNum} .sicarioMorale`).text() == "75") {
             if (retries++ < 25) return setTimeout(updateMemberStats, 100, teamNum, retries);
-            return log("[overview][updateMemberStats] timed out waiting for valid stats");
+            return log("[expOverview][*** updateMemberStats] timed out waiting for valid stats");
         }
 
         // Set/reset click handlers
@@ -2256,7 +2268,20 @@
         memberEntry["memNum"] = memberNum;
         memberEntry["lastUpd"] = (new Date().getTime());
 
-        debug("[expOverview][*** updateMemberStats] teamNum: ", teamNum, " memberNum: ", memberNum, "\nEntry: ", memberEntry);
+        debug("[expOverview][*** updateMemberStats] lvl: ", memberEntry["lvl"], " morale: ", memberEntry["morale"],
+                                               " Combat: ", memberEntry["combat"], " caution: ", memberEntry["caution"]);
+
+        if (memberEntry["lvl"] == 1 && (memberEntry["morale"] == "3300" || memberEntry["combat"] == "3300" || memberEntry["caution"] == "3300")) {
+            if (!tarijaRank9s[memberEntry["name"]]) {
+                tarijaRank9s[memberEntry["name"]] = memberEntry["id"];
+                GM_setValue("tarijaRank9s", JSON.stringify(tarijaRank9s));
+            }
+
+        }
+
+        debug("[expOverview][*** updateMemberStats] tarijaRank9s: ", tarijaRank9s);
+
+        log("[expOverview][*** updateMemberStats] teamNum: ", teamNum, " memberNum: ", memberNum, "\nEntry: ", memberEntry);
 
         if (memberEntry["morale"] == "75" && memberEntry["combat"] == "75" && memberEntry["caution"] == "75" && memberEntry["speed"] == "75") {
             memberEntry["morale"] = memberEntry["combat"] = memberEntry["caution"] =
@@ -2323,13 +2348,13 @@
 
             // Used to be a diff secario at this slot...clear stats
             let erasedEntry = false;
-//            if (memberEntry && memberEntry.name && memberEntry.name != memberName && memberEntry.assigned == true) {
-//                 debug("[expOverview][updateTeamMembers] WOULD BE removing: ", memberEntry);
-//                 memberEntry = JSON.parse(JSON.stringify(defMemberStats));
-//                 memberEntry.name = "";
-//                 erasedEntry = true;
-//                 debug("[expOverview][updateTeamMembers] new: ", memberEntry);
-//            }
+           if (memberEntry && memberEntry.name && memberEntry.name != memberName && memberEntry.assigned == true) {
+                debug("[expOverview][updateTeamMembers] WOULD BE removing: ", memberEntry);
+                memberEntry = JSON.parse(JSON.stringify(defMemberStats));
+                memberEntry.name = "";
+                erasedEntry = true;
+                debug("[expOverview][updateTeamMembers] new: ", memberEntry);
+           }
             if (!memberEntry) memberEntry = JSON.parse(JSON.stringify(defMemberStats));
 
             if (erasedEntry == false) {
@@ -2400,6 +2425,11 @@
 
     }
 
+    // Temp just jotting...
+    // 'Joaquim Elvira' (?), 'Fernando Covarrubias' ?,
+    // 'Pedro Barrueco' morale, 'Jose Carlos Ferrant' combat,
+    // 'Alfonso López' caution, 'Agustin Gaos' combat, 'Bienvenido Elvira' combat, 'Juan Bautista Cazalla' morale
+
     function startExpeditionOverview() {
         GM_addStyle(`
             .maxStat > td, span.maxStat {
@@ -2412,6 +2442,9 @@
             }
             .flagged {
                 filter: brightness(.4);
+            }
+            .tarija, .tarija td {
+                color: blus;
             }
         `);
 
@@ -2473,7 +2506,7 @@
         }
 
         let menuSelector = "#town-ctx";
-        const cmHtml = `<div id="town-ctx" class="context-menu ctxhide">
+        const cmHtml = `<div id="town-ctx" class="context-menu cmr ctxhide">
                         <ul class="" style="max-height: 50vh; overflow-y: auto;">
                             <li><a href="/Town/ArmedSurplus">Armed Surplus</a></li>
                             <li><a href="/Town/Pharmacy">Alberto's Pharmacy</a></li>
@@ -2511,14 +2544,89 @@
 
             $("#desktopMenu a.nav-link[href*='Town']").tooltip('close');
 
-            let mouseX = event.pageX;
-            let mouseY = event.pageY;
+            let mouseX = event.clientX / 2;
+            let mouseY = event.clientY;
             //let mouseX = $(event.currentTarget).position().left;
 
             $(menuSel).offset({
                 left: mouseX,
                 top: mouseY
             });
+
+            $(menuSel).toggleClass("ctxshow ctxhide");
+        }
+
+        function cmHandleOutsideClicks(cmId) {
+            $("html").click(function (e) {
+                let menu = document.getElementById(cmId)
+                if (e.target != menu) {
+                    if ($(menu).hasClass("ctxshow"))
+                        $(menu).removeClass("ctxshow").addClass("ctxhide");
+                    if (!$(menu).hasClass("ctxhide"))
+                        $(menu).addClass("ctxhide");
+                }
+            });
+        }
+    }
+
+    //
+    // ==================== Add context (right click) menu to inventory icon ===========================
+    //
+    //var validMktPages = ["Weapon"];
+    function addInventoryContextMenu(retries=0) {
+        // #desktopMenu > li:nth-child(2) > a > svg
+        GM_addStyle(`
+            #desktopMenu a.nav-link[href*='Inventory'] > svg:hover { fill: #fdc128; }
+            #desktopMenu a.nav-link[href*='Inventory']:hover > svg { fill: #fdc128; }
+            #desktopMenu a.nav-link[href*='Inventory'] > span:hover { color: #fdc128; }
+            #desktopMenu a.nav-link[href*='Inventory']:hover > span { color: #fdc128; }
+            `);
+        let selector = "#desktopMenu a.nav-link[href*='Inventory']";
+        let target = $(selector);
+
+        if (!$(target).length) {
+            if (retries++ < 50) return setTimeout(addInventoryContextMenu, 100, retries);
+            return log("[addInventoryContextMenu] timed out");
+        }
+
+        let menuSelector = "#inv-ctx";
+        const cmHtml = `<div id="inv-ctx" class="context-menu cmr ctxhide">
+                        <ul class="" style="max-height: 50vh; overflow-y: auto;">
+                            <li><a href="/Inventory?filter=Drug">Drugs</a></li>
+                            <li><a href="/Inventory?filter=Alcohol">Alcohol</a></li>
+                            <li><a href="/Inventory?filter=Medical">Medical</a></li>
+                        </ul>
+                    </div`;
+
+        $(target).after(cmHtml);
+        displayHtmlToolTip($(target), "Right-click for quick links");
+
+        let params = {cmSel: menuSelector, targetSel: selector};
+        $(selector).on('contextmenu', params, handleRightClick);
+        $(menuSelector).on('contextmenu', params, handleRightClick);
+        cmHandleOutsideClicks('town-ctx');
+
+        function handleRightClick(event) {
+            event.preventDefault();
+            let menuSel = event.data.cmSel;
+            let targetSel = event.data.targetSel;
+
+            log("Click on inventory context: ", $(menuSel).attr('href'), $(menuSel));
+            log("Click on inventory context, event: ", event);
+            log("Click on inventory context, event pos: ", $(event.currentTarget).position());
+
+            $("#desktopMenu a.nav-link[href*='Inventory']").tooltip('close');
+
+            let mouseX = event.clientX * .75;
+            let mouseY = event.clientY;
+
+            $(menuSel).offset({
+                left: mouseX,
+                top: mouseY
+            });
+
+
+            log("Click on inventory context, menu: ", $(menuSel).offset(), $(menuSel).position());
 
             $(menuSel).toggleClass("ctxshow ctxhide");
         }
@@ -4597,6 +4705,13 @@
         }
     }
 
+    function archiveStakeout(id) {
+        let entry = activeStakeouts[id];
+        let archive = JSON.parse(GM_getValue("stakeoutArchive", JSON.stringify({})));
+        if (entry) archive[id] = entry;
+        GM_setValue("stakeoutArchive", JSON.stringify(archive));
+    }
+
     var inCtx = false;
     const resetCtx = () => { inCtx = false; }
     function handleNameNodeCtxt(e) {
@@ -4615,6 +4730,9 @@
         //debug("**** [handleNameNodeCtxt] name: ", name, id);
 
         if (confirm(`Remove ${name} [${id}] from your enemy/stakeout list?`)) {
+            // Maybe move to another 'saved' list for now?
+
+            archiveStakeout(id);
             delete activeStakeouts[id];
             let url = `https://cartelempire.online/Connections/RemoveEnemy?userId=${id}`;
 
@@ -7698,6 +7816,10 @@
             addContextMenuStyles();
             addTownContextMenu();
         }
+        if (true || options.inventoryContextMenu.on == true) {
+            addContextMenuStyles();
+            addInventoryContextMenu();
+        }
         if (options.progBarClickToGym.on == true) {
             addProgBarLinks();
         }
@@ -8583,6 +8705,8 @@
 
             .ctxhide {display: none;}
             .ctxshow {display: block}
+
+            .cmr { /* position: relative !important; */ }
         `);
     }
 
