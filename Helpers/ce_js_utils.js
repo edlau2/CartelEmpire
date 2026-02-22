@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.24
+// @version     1.25
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -1089,6 +1089,7 @@ function displayHtmlToolTip(node, text, cl='tooltip4') {
 // Tooltip styles, you can provide your own...
 function addToolTipStyle() {
     GM_addStyle(`.tt-ws {white-space: pre-line;}`);
+    GM_addStyle(`.ui-helper-hidden-accessible { display: none !important; }`);
     GM_addStyle(`
         .tooltip4 {
             radius: 4px !important;
