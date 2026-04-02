@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.25
+// @version     1.26
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -189,16 +189,28 @@ const installPushStateHandler = (pushStateChangedHandler) => {
 
 // Return time as hh:mm:ss, or mm:ss
 const nn = function(n) { if (n < 10) return ('0' + n); return n; }
-function secsToClock(secsLeft) {
+function secsToClock(secsLeft, bigHrs=false, showDays=false) {
     if (secsLeft > 0) {
         let hrs = parseInt(secsLeft / 3600);
+        let days = hrs > 24 ? parseInt(hrs / 24) : 0;
         let remains = secsLeft - (hrs * 3600);
         let mins = parseInt(remains / 60);
         let secs = parseInt(remains % 60);
-        if (hrs > 24) hrs = 0;
+        if (hrs > 24 && (bigHrs == false || showDays == true)) {
+            if (showDays == true)
+                hrs = hrs % 24;
+            else
+                hrs = 0;
+        }
 
-        return ((+hrs > 0) ? (nn(hrs) + ":") : '') +
-            ((+mins > 0) ? (nn(mins)) : '00') + ":" + nn(secs);
+        if (showDays == false) {
+            return ((+hrs > 0) ? (nn(hrs) + ":") : '') +
+                ((+mins > 0) ? (nn(mins)) : '00') + ":" + nn(secs);
+        } else {
+            return ((+days > 0) ? (nn(days) + ":") : '') +
+                (nn(hrs) + ":") + ((+mins > 0) ? (nn(mins)) : '00') + ":" + nn(secs);
+        }
+
     } else {
         return '00:00:00';
     }
