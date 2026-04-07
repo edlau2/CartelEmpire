@@ -25,6 +25,7 @@
 
     // To calc opacity value: 255 x (opacity %), then convert to hex
     // 100% = FF, 90% = 91, 75% = BF, 50% = 80, 25% = 40, 10% = 1A, 0% = 0
+    //
     // Accepts either hex (prefix with a '#') or decimal % (postfix with a '%')
     //
     //const chatOpacity = '#BF';    // 75% opacity in hex
