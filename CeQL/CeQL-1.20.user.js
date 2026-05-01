@@ -44,6 +44,7 @@
 
     // ======================= Configurable Options ==========================
 
+    var options = {};
     const logInit = GM_getValue("logInit", false);
     GM_setValue("logInit", logInit);
 
@@ -60,6 +61,7 @@
             let entry = value[1];
             if (logInit == true) log("[initOptions] key: ", key, " entry: ", entry);
 
+            let usedNewVer = false;
             if (entry["minVer"]) {
                 if (logInit == true) {
                     log("[initOptions] Option '", key, " has minVer: ", entry["minVer"],  lastVer, thisVer);
@@ -68,11 +70,23 @@
 
                 if (minVer > parseFloat(lastVer)) {
                      if (logInit == true) log("[initOptions] updating ", key, " to ", entry);
-                     options[key] = JSON.parse(JSON.stringify(entry));
+                     options[key.toString()] = JSON.parse(JSON.stringify(entry));
+                    usedNewVer = true;
                  }
             }
 
-//             options[key] = JSON.parse(GM_getValue(key, JSON.stringify(value)));
+            if (usedNewVer == false) {
+                let val = GM_getValue(key, JSON.stringify(entry));
+                if (logInit == true) log("[initOptions] val: ", val);
+                if (val == undefined ||val == "undefined") {
+                    val = JSON.stringify(entry);
+                    if (logInit == true) log("[initOptions] val: ", val);
+                }
+                if (logInit == true) log("[initOptions] val: ", val);
+                options[key.toString()] = JSON.parse(val);
+                if (logInit == true) log("[initOptions] read opt: ", key, ": ", options[key]);
+                //GM_setValue(key, JSON.stringify(options[key]));
+            }
 
 //             if (logInit == true) log("[initOptions] ", key, options[key], optObject[key]);
 //             // Quick check for new properties or keys to remove/re-write
@@ -99,8 +113,13 @@
             //     }
             // });
 
-            //GM_setValue(key, JSON.stringify(options[key]));
+            if (logInit == true) log("[initOptions] writing opt: ", key, " to storage as: ", options[key.toString()]);
+            GM_setValue(key, JSON.stringify(options[key.toString()]));
         });
+
+        if (logInit == true) {
+            log("[initOptions] options: ", options);
+        }
     }
 
     const groupIdToId = (optId) => { return (optId + 'Custom'); }
@@ -117,7 +136,7 @@
                        "lnk": { "id": "links", "title": "Quick Links" },
                      };
 
-    const options = {};
+    //const options = {};
     const defOptions = {
         "lockStatusBar":       { "on": true, "desc": "Lock the status bar to the nav bar", "visible": true, "grp": "gbl" },
         "customClock":         { "on": true, "desc": "Put a small clock in LPT time on the nav bar", "visible": true, "grp": "gbl" },
@@ -179,6 +198,8 @@
 
     initOptions(defOptions);
     GM_setValue("lastVer", thisVer);
+
+    log("[initOptions - after] options: ", options);
 
     debugLoggingEnabled = options.dbgLoggingEnabled.on;
 
