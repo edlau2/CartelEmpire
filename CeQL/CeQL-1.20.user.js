@@ -171,20 +171,20 @@
         "statEstimates":       {"on": true, "desc": "Attempt to estimate an opponents bat stats, based on previous fight data", "visible": true, "grp": "gbl"},
         "cooldownsOnStatBar":  {"on": false, "desc": "Display cooldowns on status bar", "visible": true, "grp": "gbl"},
         "saveMarketPrices":    {"on": true, "desc": "Collect historical prices from the item market", "visible": true, "grp": "twn"},
-        "miniProfiles":        {"on": true, "desc": "Long press pops up mini-profiles on certain player's links, such as on chat", "visible": true, "grp": "lnk", "minVer": "1.20" },
+        "miniProfiles":        {"on": true, "desc": "Long press pops up mini-profiles on certain player's links, such as on chat (incomplete)", "visible": true, "grp": "lnk", "minVer": "1.20" },
         "gymLock":             {"on": true, "desc": "Allows you to specify default values to spend on each stat, or retain what you set over a refresh.", "visible": true, "grp": "gym"},
         "cashOnHandAlert":     {"on": true, "val": 400000, "desc": "Alert you when your cash on hand goes above a threshold, such as when your items sell in the market.", "visible": true, "grp": "gbl"},
-        "showExpSuccessRates": {"on": true, "desc": "Show team success chance in team selct dropdowns.", "visible": true, "grp": "exp"},
+        "showExpSuccessRates": {"on": true, "desc": "Show team success chance in team select dropdowns.", "visible": true, "grp": "exp"},
         "showExpSmallFormat":  {"on": true, "desc": "Show expeditions in smaller format across the screen instead of vertically", "visible": true, "grp": "exp"},
         "installFavoritesMenu": {"on": true, "desc": "Place a 'favorites' menu on the status bar.", "visible": true, "grp": "lnk"},
         "itemHelpInMarket":    {"on": true, "desc": "Show hover help for items in the market showing things such as rank", "visible": true, "grp": "twn"},
         "trackDogTraining":    {"on": true, "desc": "Keep dog training statistics", "visible": true, "grp": "inv"},
-        "exportDb":            {"on": true, "desc": "TBD: Export the entire CE database", "visible": true, "grp": "dbs", "btn": true, "btnTxt": "Export", "fn": "exportDb" },
-        "importDb":            {"on": true, "desc": "TBD: Import an exported CE database", "visible": true, "grp": "dbs", "btn": true, "btnTxt": "Import", "fn": "importDb"  },
+        "exportDb":            {"on": true, "desc": "Export the entire CE database", "visible": true, "grp": "dbs", "btn": true, "btnTxt": "Export", "fn": "exportDb" },
+        "importDb":            {"on": true, "desc": "Import an exported CE database", "visible": true, "grp": "dbs", "btn": true, "btnTxt": "Import", "fn": "importDb"  },
         "clearDb":             {"on": true, "desc": "TBD: Clear the entire CE database", "visible": true, "grp": "dbs", "btn": true, "btnTxt": "Clear", "fn": "clearDb"  },
         "viewDb":              {"on": true, "desc": "TBD: View the contents of the CE database (not yet implemented)", "visible": true, "grp": "dbs", "btn": true, "btnTxt": "View", "fn": "viewDb" },
         "rebuildAttHist":      {"on": true, "desc": "TBD: Rebuild the attack history databse (max 60 days)", "visible": true, "grp": "cbt", "btn": true, "btnTxt": "Rebuild", "fn": "rebuildAttHist" },
-        "marketPriceHelper":   {"on": true, "desc": "Provide suggested sell prices in the item market. (TBD)", "visible": true, "grp": "twn" },
+        "marketPriceHelper":   {"on": true, "desc": "TBD: Provide suggested sell prices in the item market.", "visible": true, "grp": "twn" },
 
         // Don't need to collect, there is a graph API call...
         "personalStatsGraphs": {"on": true, "desc": "TBD: Collect personal stats over time to display in a graphical format (deprecated, now native)", "visible": false, "grp": "gbl" },
@@ -206,14 +206,14 @@
     // ==================================== Help dialogs, WIP =========================================
 
     const helpMap = {
-        "productionPage": `Both the items required daily for a full production will<br>
-                           be displayed and color coded so you can see ata glance what<br>
-                           you may be low on. Red indicates that you do not have enough,<br>
-                           between the amount required (1x) and twice as much (2x), yellow,<br>
-                           between 2x and 3x, green and > 3x, lime green. The 'jobs' icon<br>
-                           will have a colored border if any are at yellow or red.<br><br>
-                           Additionally, on the jobs page, the amount required will be displayed<br>
-                           underneath the amount owned line. `,
+        "productionPage": `Both the items required daily for a full production will ` +
+                           `be displayed and color coded so you can see at a glance what ` +
+                           `you may be low on.\n\nRed indicates that you do not have enough, ` +
+                           `between the amount required (1x) and twice as much (2x), yellow, ` +
+                           `between 2x and 3x, green and > 3x, lime green.\n\nThe 'jobs' icon ` +
+                           `will have a colored border if any are at yellow or red. ` +
+                           `\n\nAdditionally, on the jobs page, the amount required will be displayed ` +
+                           `underneath the amount owned line. `,
     }
 
 
