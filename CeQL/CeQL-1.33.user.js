@@ -349,6 +349,7 @@
     const isCalendarPage = () => { return hasPath("/Calendar"); }
     const isSupporterPage = () => { return hasPath("supporter"); }
     const isSmugglingPage = () => { return hasPath("smuggling"); }
+    const isCartelRepPage = () => { return hasPath("repearnings"); }
 
     // This needs to be checked for friends or enemies...
     const isFriendsEnemiesPage = () => { return hasPath("connections"); }
@@ -459,6 +460,12 @@
       }
 
       return result.substring(0, length); // Ensure the final length
+    }
+
+    // Retry finding an element...
+    function retry(callback, retries, maxRetries=25, interval=250) {
+        if (++retries > maxRetries) return debug(whichCrime, " timed out for ", callback);
+        setTimeout(callback, interval, retries);
     }
 
     // ============ In an object of objects, find entry by unique key-vale pair =============
@@ -8231,6 +8238,33 @@
         }
     }
 
+    // Similar, cartel rep tables. Alternatively, could hide all of the 2nd cells...
+    function fixupCartelRep(retries=0) {
+        let node = `<td class="text-end dummy"></td>`;
+        let table = $("#repTableBody");
+        let cells = $("#repTableBody > tr > td:first-child");
+        console.log("xxxxx [fixupCartelRep] table: ", $(table), " cells: ", $(cells));
+
+        if (!$(table).length || !$(cells).length) {
+            return retry(fixupCartelRep, retries);
+        }
+
+        // Both of these methods work, I prefer the cell-insertion one myself.
+        //
+        // let hdr = $("#repTable > thead > tr > th:nth-child(2)");
+        // $(hdr).css("display", "none");
+
+        // Cell insertion
+        for (let idx=0; idx<$(cells).length; idx++) {
+            let cell = $(cells)[idx];
+            let next = $(cell).next();
+            if (idx % 5 == 0) console.log("xxxxx [fixupCartelRep] cell: ", $(cell), " next: ", $(next));
+            if (!$(next).hasClass("dummy")) {
+                $(cell).after($(node));
+            }
+        }
+    }
+
     // ====================== Called when DOM has been loaded ===================
      // Shorthand for the result of a promise, here, they are just logged
     // promise.then(a => _a(a), b => _b(b));
@@ -8477,6 +8511,11 @@
         if (isSmugglingPage()) { // options.......
             fixupSmuggling();
         }
+ 
+        if (isCartelRepPage()) {
+            fixupCartelRep();
+        }
+ 
 
 
     // ================= experimental sidebar
