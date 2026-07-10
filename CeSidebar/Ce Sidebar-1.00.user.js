@@ -1,0 +1,697 @@
+// ==UserScript==
+// @name         Ce Sidebar
+// @namespace    http://tampermonkey.net/
+// @version      1.00
+// @description  Adds a sidebar to cartelEmpire pages
+// @author       xedx [55266]
+// @match        https://cartelempire.online/*
+// @require      http://code.jquery.com/jquery-3.4.1.min.js
+// @require      http://code.jquery.com/ui/1.14.2/jquery-ui.js
+// @require      https://raw.githubusercontent.com/edlau2/CartelEmpire/master/Helpers/ce_js_utils.js
+// @run-at       document-body
+// @grant        GM_addStyle
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        unsafeWindow
+// ==/UserScript==
+
+/*eslint no-unused-vars: 0*/
+/*eslint no-undef: 0*/
+/*eslint curly: 0*/
+/*eslint no-multi-spaces: 0*/
+
+(function() {
+    'use strict';
+
+    debugLoggingEnabled =
+        GM_getValue("debugLoggingEnabled", false);    // Extra debug logging
+    GM_setValue("debugLoggingEnabled", debugLoggingEnabled);
+
+    const useLiClass = "rnd-btn-1";
+    const useLiClass2 = "rnd-btn-2";
+
+    const sidebar = `
+        <div id="sidebarroot" class="border-dbg xedx-locked">
+            <ul id="sb-link-list"  class="sb-area ${useLiClass}">
+                <li id="city-links" class="sb-row dropdown-header">City
+                    <span class="sb-caret"><i class="fa fa-caret-down"></i></span>
+                </li>
+
+                <ul class="sb-area ${useLiClass}">
+                    <li class="ind sb-row ${useLiClass}"><a href="/Town/Mateos">This is Mateo's</a></li>
+                    <li class="ind sb-row ${useLiClass}"><a href="/PetShop">Pet Shop</a></li>
+                    <li class="ind sb-row ${useLiClass}"><a href="/Church">Church</a></li>
+                </ul>
+
+                <li class="dummy-row"></li>
+
+                <li id="market-links" class="dropdown-header">Market
+                    <span class="sb-caret"><i class="fa fa-caret-down"></i></span>
+                </li>
+                <div class="sb-area">
+                    <div class="ind sb-row rnd-btn-2"><a href="/Market?sort=price&dir=asc&p=Luxury">Luxury</a></div>
+                    <div class="ind sb-row rnd-btn-2""><a href="/Market?sort=price&dir=asc&p=Weapon">Weapons</a></div>
+                    <div class="ind sb-row ${useLiClass2}"><a href="/Market?sort=price&dir=asc&p=Enhancement">Enhancements</a></div>
+                    <div class="ind sb-row ${useLiClass2}"><a href="/Market?sort=price&dir=asc&p=Car">Cars</a></div>
+                </div>
+
+                <li class="dummy-row"></li>
+
+                <li class="ind sb-row ${useLiClass}"><a href="/Achievements">Achievements</a></li>
+                <li class="ind sb-row ${useLiClass}"><a href="/Connections?t=enemies">Enemies</a></li>
+                <li class="ind sb-row ${useLiClass}"><a href="/Inventory">Inventory</a></li>
+
+                <li class="dummy-row"></li>
+
+                <li id="sb-addpage" class="favFooter">Add This Page</li>
+                <li id="sb-rempage" class="favFooter">Remove This Page</li>
+                <li id="sb-favedit" class="favFooter">Edit List</li>
+            </ul>
+        </div>
+    `;
+
+    function hashChangeHandler() {
+        debug("[hashChangeHandler]: ", location.href);
+        callOnContentLoaded(handlePageLoad);
+    }
+
+    function pushStateChanged(e) {
+        debug("[pushStateChanged]: ", location.href);
+        callOnContentLoaded(handlePageLoad);
+    }
+
+    function installSidebarContents(retries=0) {
+
+        if ($("#sidebarroot").length > 0) return log("Sidebar already exists!");
+        let root = $("#contentContainer");
+        if (!$(root).length) {
+            if (retries++ < 25) return setTimeout(installSidebarContents, 100, retries);
+            return log("[installSidebarContents] timed out.");
+        }
+
+        $(root).css("display", "flex");
+        $(root).css("position", "relative");
+        $(root).prepend(sidebar);
+        $("#contentContainer > div.row").css({"margin-left": "167px", "width": "90%"});
+
+        // Add event handlers
+        // $('#sb-addpage').on('click', handleAddPage);
+        // $('#sb-rempage').on('click', handleRemovePage);
+        // $('#sb-favedit').on('click', handleEditFaves);
+
+        $(".fa").on('click', handleCaret);
+
+        //$('.dropdown-options li.faveLink').on('click', handleFavoriteClick);
+
+        function handleCaret(e) {
+            let target = $(this).parent().next()
+            //debug("[ceGymLock][handleCaret] ", $(this), $(this).next());
+            $(target).slideToggle("slow");
+            $(this).toggleClass('fa-caret-down fa-caret-right');
+        }
+
+
+
+
+    }
+
+    function handlePageLoad(retries=0) {
+
+        installSidebarContents();
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // Main.
+    //////////////////////////////////////////////////////////////////////
+
+    logScriptStart();
+
+    if ($("#sidebarroot").length > 0) return log("Sidebar already exists!");
+
+    addStyles();
+
+    installSidebarContents();
+
+    callOnHashChange(hashChangeHandler);
+    installPushStateHandler(pushStateChanged);
+
+    //callOnContentLoaded(handlePageLoad);
+
+
+    // Add any styles here
+    function addStyles() {
+        GM_addStyle(`
+            #sidebarroot {
+                width: 167px;
+                min-width: 167px;
+                display: flex;
+                flex-direction: column;
+                /*margin-right: 10px;*/
+                margin-top: 142px;
+            }
+            .border-dbg {
+                border: 1px solid green;
+            }
+            .xedx-locked {
+                height: 95vh;
+                max-height: 95vh;
+                overflow-y: auto;
+                position: fixed;
+                top: 0;
+            }
+            #sidebarroot ul {
+                padding: 0px 0px 0px 0px !important;
+            }
+            #sidebarroot li.rnd-btn-1 {
+                background: linear-gradient(to bottom, #4c4c4cFF 0%,
+                        #595959FF 12%, #666666FF 25%, #2c2c2cFF 50%,
+                        #2b2b2bFF 76%, #1c1c1cFF 91%, #131313FF 100%);
+                display: list-item;
+                list-style-type: none;
+                height: 32px;
+                border-radius: 4px;
+                margin: 0px 0px 0px 0px !important;
+                padding: 0px 0px 0px 0px !important;
+            }
+            #sidebarroot li.rnd-btn-2 {
+                font-family: arial;
+                font-weight: 400;
+                font-size: 12px;
+                font-stretch: 100%;
+                color: rgb(221, 221, 221);
+                background-color: rgb(51, 51, 51);
+                border-bottom-color: rgb(68, 68, 68);
+                border-bottom-left-radius: 0px;
+                border-bottom-right-radius: 5px;
+                border-bottom-style: solid;
+                border-bottom-width: 1px;
+                line-height: 16px;
+                cursor: pointer;
+                margin: 0px 0px 0px 0px !important;
+                padding: 0px 0px 0px 0px !important;
+                display: block;
+                height: 22px;
+            }
+
+            .sb-area {
+                border-top-right-radius: 5px;
+                border-bottom-right-radius: 5px;
+                margin-top: 2px;
+                overflow: hidden;
+                padding: 0px 0px 0px 0px !important;
+            }
+
+            .sb-row {
+                background-color: #333;
+                cursor: pointer;
+                vertical-align: top;
+                border-top-right-radius: 5px;
+                border-bottom-right-radius: 5px;
+                position: relative;
+                overflow: hidden;
+                padding: 0px 0px 0px 0px !important;
+
+
+            }
+            .ind {
+                /*display: flex !important;
+                justify-content: center;*/
+                padding-left: 20px !important;
+                margin: 0px 5px 0px 15px !important;
+            }
+            #sb-link-list {
+                display: flex;
+                flex-direction: column;
+                padding: 5px;
+            }
+            .dummy-row {
+                visibility: hidden;
+                height: 16px !important;
+            }
+
+            .sb-caret {
+                position: absolute;
+                cursor: pointer;
+                transition: all .2s ease-in-out;
+                right: 12px;
+            }
+
+            .sb-row {
+
+            }
+
+            /* ------------------- contents -------------------- */
+
+            #sb-inner-list {
+                /* max-height: 50vh; */
+                max-height: 210px;
+                overflow-y: scroll;
+                overflow-x: hidden;
+            }
+            .mkt-opt {
+                display: flex;
+                justify-content: space-between;
+            }
+            #favesMenu > select > option:first-child {
+                pointer-events: none;
+            }
+            .custom-dropdown {
+                position: relative;
+                border: 1px solid #ccc;
+                border-radius: var(--bs-border-radius);
+                cursor: pointer;
+                /* --bs-progress-border-radius: var(--bs-border-radius); */
+            }
+            #sb-addpage {
+                border-top: 1px solid #ccc;
+                padding-top: 4px;
+            }
+            .dropdown-header {
+                padding: 0px 4px 2px 0px;
+                display: flex;
+                justify-content: center;
+                /* background-color: var(--bs-body-bg);
+                background-color: var(--bs-tertiary-bg); */
+                border-radius: inherit;
+                height: 16px;
+            }
+            .sb-dropdown-options {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                width: 100%;
+                background-color: var(--bs-body-bg);
+                border: 1px solid #ccc;
+                border-radius: 0 0 8px 8px;
+                z-index: 1;
+            }
+            .sb-dropdown-options li {
+                padding: 0px 10px;
+                white-space: nowrap;
+                color: #ccc;
+            }
+            .favFooter {
+                display: flex;
+                justify-content: center;
+                background-color: var(--bs-tertiary-bg)
+            }
+            .sb-dropdown-options li:last-child {
+                border-radius: 0 0 10px 10px;
+            }
+            .sb-dropdown-options li:hover {
+                background-color: #454545;
+                color: #ffc107;
+            }
+
+        `);
+    }
+
+
+
+
+
+//         function liStartFromEntry(entry) {
+//             return `<li id="${entry.id}" class="faveLink" data-idx=${entry.idx} draggable="true" contenteditable="true" data-old-title="${entry.title}" ` +
+//                 `data-title="${entry.desc}" data-value="${entry.url}">`;
+//         }
+
+//         function favesEntryToHtml(entry) {
+//             return `<li id="${entry.id}" class="faveLink" data-idx=${entry.idx} draggable="true" ` +
+//                     `contenteditable="true" data-old-title="${entry.title}" data-title="${entry.desc}" data-value="${entry.url}">${entry.desc}</li>`;
+//         }
+
+//         function logLiIdx(lis) {
+//             let idxArray = $(lis).map(function() {
+//                 return $(this).attr('data-idx');
+//             }).get();
+//             let nameArray = $(lis).map(function() {
+//                 return $(this).attr('data-title');
+//             }).get();
+//             debug("[faves][logfave] li indexes: ", idxArray, "\nnames: ", nameArray);
+//         }
+
+//         function logEntryIdx(list) {
+//             let idxArray = [];
+//             let nameArray = [];
+//             $.each(list, function(key, value) {
+//                 idxArray.push(value.idx);
+//                 nameArray.push(value.title);
+//             });
+//             debug("[faves][logfave] entry indexes: ", idxArray, "\nnames: ", nameArray);
+//         }
+
+//         function saveFavorites() {
+//             debug("[faveSelect][saveFavorites] faveDefs: ", faveDefs);
+//             logEntryIdx($(faveDefs)[0]);
+//             GM_setValue(savedFavesKey, JSON.stringify(faveDefs));
+//         }
+
+//         function loadFavorites() {
+//             faveDefs = JSON.parse(GM_getValue(savedFavesKey, JSON.stringify({})));
+//             $("#favesMenu ul.dropdown-options #inner-list").empty();
+//             $(".dropdown-options li.faveLink").remove();
+//             let keys = Object.keys(faveDefs);
+
+//             let tmpArr = [];
+//             for (let idx=0; idx<keys.length; idx++) {
+//                 let id = keys[idx];
+//                 let entry = faveDefs[id];
+//                 entry.title = entry.desc;
+//                 entry.order = 0; //entry.idx;
+//                 faveDefs[id] = entry;
+//                 tmpArr.push({ "id": entry.id, "idx": entry.idx });
+//             }
+
+//             tmpArr.sort((a, b) => a.idx - b.idx);
+//             tmpArr.forEach(item => {
+//                 let nodeHtml = favesEntryToHtml(faveDefs[item.id]);
+//                 $("#favesMenu ul.dropdown-options #inner-list").append(nodeHtml);
+//             });
+
+//             debug("[faveSelect][loadFavorites] list: ", $("#favesMenu ul.dropdown-options #inner-list li"));
+//             $("#favesMenu ul.dropdown-options #inner-list li").on('click', handleFavoriteClick);
+//         }
+
+//         function getPageTitleSmall() {
+//             let pgTitle = $($("title")[0]).text();
+//             if (pgTitle)
+//                 pgTitle = pgTitle.replace("| Cartel Empire", '').trim();
+
+//             const urlParams = new URLSearchParams(window.location.search);
+//             let selected = urlParams ? urlParams.get("p") : null;
+//             if (!selected) selected = urlParams ? urlParams.get("t") : null;
+//             if (selected) pgTitle = pgTitle + ' - ' + selected;
+//             return pgTitle;
+//             return pgTitle;
+//         }
+
+//         function getHeaderText(li) {
+//             let txt = "Favorites";
+//             if ($(li).attr('id') == "sb-rempage") return txt;
+//             if ($(li).attr('id') == "sb-addpage") return getPageTitleSmall();
+//             let nodeTxt = $(li).attr('data-title');
+//             if (nodeTxt) return nodeTxt;
+//         }
+
+//         function getRelURL() {
+//             return (window.location.pathname +
+//                     window.location.search +
+//                     window.location.hash);
+//         }
+
+//         function addReferrerToPath(path, entry) {
+//             debug("[faveSelect][]addReferrerToPath] path: ", path);
+//             if (!path) {
+//                 console.error("Bad Path! entry: ", entry);
+//                 return;
+//             }
+//             let fullPath = window.location.origin + path;
+//             const currentUrl = new URL(fullPath);
+//             const params = currentUrl.searchParams;
+//             if (params) params.append('ref', entry.id);
+
+//             const newPath = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+//             debug("[faveSelect][]addReferrerToPath] fullPath: ", fullPath, "\nnewPath: ", newPath);
+
+//             return newPath;
+//         }
+
+//         function handleFavoriteClick(e) {
+//             e.stopPropagation();
+//             //e.preventDefault();
+//             let selectedValue = $(this).attr('data-value');
+//             let id = $(this).attr("id");
+//             let entry = faveDefs[id];
+//             let url = entry.url;
+//             if (!url) url = $(this).attr("data-value");
+//             // let selectedText = getHeaderText($(this));
+//             // $('.dropdown-header').text(entry.desc);
+//             // $('.dropdown-options').slideUp(); // Hide options
+
+//             let newPath = addReferrerToPath(url, entry)
+//             window.location.href = newPath;
+//         }
+
+//         function handleAddPage() {
+//             let smTitle = getPageTitleSmall();
+//             //let tmp = $(`.faveLink[data-title="${smTitle}"]`);
+//             let url = getRelURL();
+
+//             debug("[faveSelect][handleAddPage] getting hash for ", url);
+//             hashUrlToId(url).then(hashedId => {
+//                 debug("[faveSelect][handleAddPage]: got hash: ", hashedId, smTitle);
+//                 let test = faveDefs[hashedId];
+//                 if (test) {
+//                     debug("[faveSelect][handleAddPage] hash collision, already exists? \n", faveDefs, "\hhashed: ", hashedId);
+//                     return doToggle();
+//                 }
+//                 //if ($(tmp).length > 0) return doToggle();
+
+//                 let entry = {"desc": smTitle, "title": smTitle, "url": getRelURL(), "id": hashedId, "order": 0, "idx": faveDefs.length};
+//                 let newOptHtml = favesEntryToHtml(entry);
+//                 faveDefs[hashedId] = entry;
+
+//                 $("#inner-list").append(newOptHtml);
+//                 let newOpt = $("#inner-list > li:last-child");
+//                 $('.dropdown-header').text(getPageTitleSmall());
+//                 $(newOpt).on('click', handleFavoriteClick);
+//                 entry.idx = $(newOpt).index();
+//                 debug("[faveSelect][handleAddPage] added page: ", $(newOpt), "\nPath: ", getRelURL());
+//                 doToggle();
+//                 saveFavorites();
+//                 loadFavorites();
+//             });
+
+//         }
+
+//         function handleRemovePage() {
+//             debug("[faveSelect][handleRemovePage]");
+//             let relUrl = getRelURL();
+//             let opt = $('#favesMenu ul').find(`li[data-value='${relUrl}']`);
+//             if (!$(opt).length)
+//                 opt = $('#favesMenu ul').find(`li[data-value*='${window.location.pathname}']`);
+//             let id = $(opt).attr("id");
+//             let entry = faveDefs[id];
+//             delete faveDefs[id];
+//             $(opt).remove();
+//             debug("[faveSelect] removed page: ", id, entry);
+
+//             saveFavorites();
+//         }
+
+//         function handleEditRemoveEntry(e) {
+//             e.stopPropagation();
+//             let li = $(this).closest("li");
+//             let id = $(li).attr("id");
+//             let url = $(li).attr("data-value");
+//             let opt = $('#favesMenu ul').find(`li[data-value='${url}']`);
+
+//             let entry = faveDefs[id];
+
+//             debug("[handleEditRemoveEntry] li: ", $(li), " id: ", id, " url: ", url, " opt: ", opt, " entry: ", entry);
+
+//             delete faveDefs[id];
+//             $(opt).remove();
+//             $(li).remove();
+//             saveFavorites();
+//         }
+
+//         function makeEditLiFromEntry(entry) {
+//             let li = //`<li style="order: ${entry.order};">` +
+//                  liStartFromEntry(entry) +
+//                      `<span class="fav-edit-span" data-id="${entry.id}" contenteditable="true">${entry.desc}</span>` +
+//                      `<span style="width:10px;"></span><span class="fes2">X</span>` +
+//                  `</li>`;
+//             return li;
+//         }
+
+//         function saveFavesHelp() {
+//             let helpDiv = `
+//                 <div id="FavesHelp" class="xopts-ctr-screen xopts-def-size xopts-bg xopt-border-ml6">
+//                     <div class='inner'>
+//                         <p>
+//                             To remove an entry, click the 'X' to the right of the entry<br><br>
+//                             To edit the text, simply click on it and start typing<br><br>
+//                             You can drag the entries to re-order them<br><br>
+//                             When finished, select 'Close' and your changes will be saved
+//                         </p>
+//                     </div>
+//                     <div class="footer">
+//                         <button id="help-fav-close" class="btn btn-success btn-dark">Close</button>
+//                     </div>
+//                 </div>
+//             `;
+
+//             $("#FavesEdit").replaceWith(helpDiv);
+
+//             $("#help-fav-close").on("click", function(e) {
+//                 $("#FavesHelp").remove();
+//                 $("#FavesEdit").remove();
+//                 debug("[favesHelp][help-fav-close]  \nhelp: ", $("#FavesHelp"), "\nedit: ", $("#FavesEdit"));
+//                 handleEditFaves();
+//             });
+//         }
+
+//         function saveFavesEdits() {
+//             debug("[saveFavesEdits] faves: ", faveDefs);
+//             let nodes = $("#FavesEdit > div.inner > ul > li > span.fav-edit-span");
+//             for (let idx=0; idx< $(nodes).length; idx++) {
+//                 let node = $(nodes)[idx];
+//                 let desc = $(node).text();
+//                 let id = $(node).attr("data-id");
+//                 let entry = faveDefs[id];
+
+//                 if (!entry) {
+//                     log("Error, no entry: ", id, faveDefs);
+//                     debugger;
+//                 }
+//                 entry.desc = desc;
+//                 entry.title = desc;
+//                 faveDefs[id] = entry;
+//                 debug("[saveFavesEdits] new entry: ", entry);
+//             }
+//             saveFavorites();
+//             loadFavorites();
+//             debug("[saveFavesEdits] done: ", faveDefs);
+//         }
+
+//         function handleEditFaves(e) {
+//             debug("[handleEditFaves]");
+//             let editDiv = `
+//                 <div id="FavesEdit" class="xopts-ctr-screen xopts-def-size xopts-bg xopt-border-ml6">
+//                     <div class='inner'>
+//                         <ul>
+
+//                         </ul>
+//                     </div>
+//                     <div class="footer">
+//                         <button id="edit-fav-save" class="btn btn-success btn-dark" type="button">Save</button>
+//                         <button id="edit-fav-help" class="btn-fav-help btn btn-success btn-dark" type="button">?</button>
+//                         <button id="edit-fav-close" class="btn btn-success btn-dark">Close</button>
+//                     </div>
+//                 </div>
+//             `;
+
+//             $('body').append(editDiv);
+
+//             let ul = $("#FavesEdit > div.inner > ul");
+//             let keys = Object.keys(faveDefs);
+//             let tmpArr = [];
+//             for (let idx=0; idx<keys.length; idx++) {
+//                 let id = keys[idx];
+//                 let entry = faveDefs[id];
+//                 tmpArr.push({ "id": id, "idx": entry.idx });
+//             }
+
+//             tmpArr.sort((a, b) => a.idx - b.idx);
+//             tmpArr.forEach(item => {
+//                 let li = makeEditLiFromEntry(faveDefs[item.id]);
+//                 $(ul).append(li);
+//             });
+
+//             $("#edit-fav-close").on('click', function() {$("#FavesEdit").remove();});
+//             $("#edit-fav-save").on('click', saveFavesEdits);
+//             $("#edit-fav-help").on('click', saveFavesHelp);
+
+//             $(".fes2").on("click", handleEditRemoveEntry);
+
+//             // ===== Drag support =====
+//             let draggedItem = null;
+//             let draggableList = $("#FavesEdit ul")[0];
+//             $("#FavesEdit ul").on('dragstart', (e) => {
+//                 if (e.target.tagName === 'LI') {
+//                     e.target.contentEditable = 'false';
+//                     draggedItem = e.target;
+//                     e.originalEvent.dataTransfer.setData('text/plain', e.target.id);
+//                     debug("[faves-drag] dragstart, id: ", e.target.id, " idx: ", $(e.target).index());
+//                 } else {
+//                     e.preventDefault();
+//                 }
+//             });
+
+//             $("#FavesEdit ul").on('dragover', (e) => {
+//                 e.preventDefault();
+//                 const target = e.target.closest('li');
+//                 if (target && target !== draggedItem) {
+//                     const boundingBox = target.getBoundingClientRect();
+//                     const offset = e.clientY - boundingBox.top;
+//                     if (offset > boundingBox.height / 2) {
+//                         draggableList.insertBefore(draggedItem, target.nextSibling);
+//                     } else {
+//                         draggableList.insertBefore(draggedItem, target);
+//                     }
+//                 }
+//             });
+
+//             $("#FavesEdit ul").on('drop', (e) => {
+//                 e.preventDefault();
+//                 const data = e.originalEvent.dataTransfer.getData('text/plain');
+//                 const element = document.getElementById(data);
+
+//                 let targetElement = e.target;
+//                 while (targetElement && targetElement.tagName !== 'LI') {
+//                     targetElement = targetElement.parentElement;
+//                 }
+
+//                 if (targetElement && element) {
+//                     if (targetElement.id !== element.id) {
+//                         debug("[faves-drag] drop: ", $(targetElement), $(element));
+//                         e.target.appendChild(element);
+//                     } else {
+//                         element.contentEditable = 'true';
+//                     }
+//                 }
+
+//                 debug("[faves-drag] drop, id: ", element.id, " idx: ", $(element).index());
+
+//                 document.querySelectorAll('li[contenteditable="true"]').forEach(item => {
+//                     if (item !== element) { // Skip the item we just moved, if it is being re-enabled
+//                         item.contentEditable = 'true';
+//                     }
+//                 });
+//                 draggedItem = null; // Clear the dragged item variable
+//             });
+
+//             $("#FavesEdit ul").on('dragend', (e) => {
+//                 // Make all list items editable again after drag ends
+//                 const id = e.target.id;
+//                 debug("[faves-drag] dragend, id: ", id, $(`#${id}`));
+//                 let lis = $("#FavesEdit ul li");
+
+//                 let editedEntries = {};
+//                 for (let idx=0; idx < $(lis).length; idx++) {
+//                     let item = $(lis)[idx];
+//                     let entry = faveDefs[item.id];
+//                     debug("[faves-drag] change idx from: ", entry.idx, " to: ", idx, " index: ", $(item).index(), entry.title);
+//                     entry.idx = idx;
+//                     item.contentEditable = 'true';
+//                     faveDefs[item.id] = JSON.parse(JSON.stringify(entry));
+//                     editedEntries[idx] = entry;
+//                 }
+
+//                 $(".dropdown-options li.faveLink").remove();
+//                 let keys = Object.keys(editedEntries);
+//                 for (let idx=0; idx<keys.length; idx++) {
+//                     let itemIdx = keys[idx];
+//                     let entry = editedEntries[itemIdx];
+//                     let nodeHtml = favesEntryToHtml(entry);
+//                     $("#favesMenu ul.dropdown-options #inner-list").append(nodeHtml);
+//                 }
+
+//                 //logEntryIdx($(faveDefs)[0]);
+//                 saveFavorites();
+//                 loadFavorites();
+//                 //logEntryIdx($(faveDefs)[0]);
+
+//             });
+
+//         }
+
+
+
+
+})();
+
+
+
+
