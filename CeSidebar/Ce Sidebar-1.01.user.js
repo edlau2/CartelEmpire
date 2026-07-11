@@ -30,56 +30,25 @@
     let sidebarStyle = GM_getValue("sidebarStyle", "rnd-btn-3");
     GM_setValue("sidebarStyle", sidebarStyle);
 
+    const user_id = initUserId();
+    //const user_name = 'xedx';
+
+    const secsInMin = 60 * 60;
+    const secsInHr = secsInMin * 60;
+    const secsInDay = secsInHr * 24;
+
+    function capWord(word) {
+        if (!word) return "";
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+
+    // ====================================== Sidebar HTML =======================================
+
     const useLiClass = sidebarStyle;
     const liRow = `<li class="ind sb-row ${useLiClass}">`;
 
-    const boosterCdSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-          <g xmlns="http://www.w3.org/2000/svg" transform="translate(-720 0)" clip-path="url(#clip34_1845_10698)">
-            <path d="M724.648 15.755C723.858 15.755 722.778 15.155 721.818 14.195C721.198 13.565 720.708 12.875 720.448 12.235C720.168 11.525 720.198 10.955 720.528 10.625L727.208 3.945L732.068 8.805L725.388 15.485C725.208 15.665 724.958 15.755 724.648 15.755Z" fill="url(#paint157_linear_1845_10698)"/>
-            <path d="M727.208 4.295L731.718 8.805L725.208 15.315C725.078 15.445 724.878 15.515 724.648 15.515C723.958 15.515 722.918 14.955 721.988 14.025C720.748 12.785 720.168 11.335 720.698 10.805L727.208 4.295ZM727.208 3.585L726.858 3.935L720.348 10.445C720.108 10.685 719.778 11.245 720.218 12.325C720.488 12.995 720.988 13.725 721.638 14.365C722.648 15.375 723.798 15.995 724.648 15.995C725.118 15.995 725.408 15.805 725.558 15.645L732.068 9.135L732.418 8.785L732.068 8.435L727.558 3.925L727.208 3.575V3.585Z" fill="#AAAAAA"/>
-            <path d="M722.998 8.505L721.778 9.725C721.248 10.255 721.818 11.695 723.068 12.945C724.318 14.195 725.758 14.765 726.288 14.235L731.718 8.805L731.418 8.505H722.998Z" fill="url(#paint158_linear_1845_10698)"/>
-            <path d="M727.008 9.505C729.217 9.505 731.008 9.05728 731.008 8.505C731.008 7.95272 729.217 7.505 727.008 7.505C724.799 7.505 723.008 7.95272 723.008 8.505C723.008 9.05728 724.799 9.505 727.008 9.505Z" fill="#C43534"/>
-            <path d="M731.738 8.675C730.948 8.675 729.868 8.075 728.908 7.115C728.288 6.485 727.798 5.795 727.538 5.155C727.258 4.445 727.288 3.875 727.618 3.545C727.798 3.365 728.048 3.275 728.358 3.275C729.148 3.275 730.228 3.875 731.188 4.835C732.568 6.225 733.128 7.755 732.478 8.405C732.298 8.585 732.048 8.675 731.738 8.675Z" fill="url(#paint159_radial_1845_10698)"/>
-            <path d="M728.348 3.515C729.038 3.515 730.078 4.075 731.008 5.005C732.248 6.245 732.828 7.695 732.298 8.225C732.168 8.355 731.968 8.425 731.738 8.425C731.048 8.425 730.008 7.865 729.078 6.935C727.838 5.695 727.258 4.245 727.788 3.715C727.918 3.585 728.118 3.515 728.348 3.515ZM728.348 3.015C727.878 3.015 727.588 3.205 727.438 3.365C727.198 3.605 726.868 4.165 727.308 5.245C727.578 5.915 728.078 6.645 728.728 7.285C729.738 8.295 730.888 8.915 731.738 8.915C732.208 8.915 732.498 8.725 732.648 8.565C732.888 8.325 733.218 7.765 732.778 6.685C732.508 6.015 732.008 5.285 731.358 4.645C730.348 3.635 729.198 3.015 728.348 3.015Z" fill="#AAAAAA"/>
-            <path d="M731.869 6.165C731.499 6.165 730.989 5.895 730.549 5.455C729.979 4.885 729.609 4.105 729.999 3.725L732.839 0.885L735.129 3.165L732.289 6.005C732.219 6.075 732.089 6.165 731.869 6.165Z" fill="url(#paint160_radial_1845_10698)"/>
-            <path d="M732.849 1.235L734.779 3.165L732.119 5.825C732.059 5.885 731.979 5.915 731.879 5.915C731.579 5.915 731.139 5.675 730.739 5.275C730.209 4.745 729.959 4.125 730.189 3.895L732.849 1.235ZM732.849 0.535L732.499 0.885L729.839 3.545C729.389 3.995 729.619 4.855 730.389 5.635C730.879 6.125 731.439 6.415 731.879 6.415C732.179 6.415 732.369 6.285 732.469 6.185L735.129 3.525L735.479 3.175L735.129 2.825L733.199 0.895L732.849 0.545V0.535Z" fill="#AAAAAA"/>
-            <path d="M735.179 2.855C734.809 2.855 734.299 2.585 733.859 2.145C733.579 1.865 733.359 1.545 733.239 1.255C733.049 0.775 733.199 0.515 733.309 0.405C733.379 0.335 733.509 0.245 733.729 0.245C734.099 0.245 734.609 0.515 735.049 0.955C735.329 1.235 735.549 1.555 735.669 1.845C735.859 2.325 735.709 2.585 735.599 2.695C735.529 2.765 735.399 2.855 735.179 2.855Z" fill="#888888"/>
-            <path d="M733.729 0.505C734.029 0.505 734.469 0.745 734.869 1.145C735.399 1.675 735.649 2.295 735.419 2.525C735.359 2.585 735.279 2.615 735.179 2.615C734.879 2.615 734.439 2.375 734.039 1.975C733.509 1.445 733.259 0.825 733.489 0.595C733.549 0.535 733.629 0.505 733.729 0.505ZM733.729 0.00500011C733.429 0.00500011 733.239 0.135 733.139 0.235C732.989 0.385 732.769 0.735 733.019 1.345C733.149 1.665 733.389 2.015 733.689 2.315C734.179 2.805 734.739 3.095 735.179 3.095C735.479 3.095 735.669 2.965 735.769 2.865C736.219 2.415 735.989 1.555 735.219 0.775C734.739 0.295 734.179 0.00500011 733.729 0.00500011Z" fill="#AAAAAA"/>
-            <path d="M730.938 14.005H731.008V11.005H733.008V14.005H733.078L732.008 14.865L730.938 14.005Z" fill="#C9C13C"/>
-            <path d="M732.508 11.505V13.825L732.008 14.225L731.508 13.825V11.505H732.508ZM733.508 10.505H730.508V13.505H729.508L732.008 15.505L734.508 13.505H733.508V10.505Z" fill="#C99339"/>
-          </g>
-        </svg>
-    `;
-
-    const medCdSvg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
-        <g xmlns="http://www.w3.org/2000/svg" transform="translate(-835 0)"  clip-path="url(#clip40_1845_10698)">
-            <path d="M839.5 13.575H839.57V10.575H841.57V13.575H841.65L840.57 14.435L839.5 13.575Z" fill="#D1A238"/>
-            <path d="M841.07 11.075V13.395L840.57 13.795L840.07 13.395V11.075H841.07ZM842.07 10.075H839.07V13.075H838.07L840.57 15.075L843.07 13.075H842.07V10.075Z" fill="#C87944"/>
-            <path d="M831.529 15.395C830.819 15.395 829.989 14.995 829.319 14.325C828.819 13.825 828.459 13.225 828.319 12.645C828.159 12.025 828.269 11.485 828.619 11.135C828.859 10.895 829.199 10.765 829.589 10.765C830.299 10.765 831.129 11.165 831.799 11.835C832.889 12.925 833.199 14.325 832.509 15.015C832.269 15.255 831.929 15.385 831.539 15.385L831.529 15.395Z" fill="url(#paint181_radial_1845_10698)"/>
-            <path d="M829.59 11.025C830.21 11.025 830.98 11.385 831.62 12.025C832.6 13.005 832.91 14.265 832.33 14.855C832.13 15.055 831.85 15.145 831.53 15.145C830.91 15.145 830.14 14.785 829.5 14.145C828.52 13.165 828.21 11.905 828.79 11.315C828.99 11.115 829.27 11.025 829.59 11.025ZM829.59 10.525C829.13 10.525 828.73 10.675 828.44 10.965C828.03 11.375 827.9 12.005 828.08 12.705C828.24 13.325 828.62 13.965 829.15 14.495C829.87 15.215 830.76 15.645 831.54 15.645C832 15.645 832.4 15.495 832.69 15.205C833.48 14.415 833.17 12.855 831.98 11.665C831.26 10.945 830.37 10.515 829.59 10.515V10.525Z" fill="#AAAAAA"/>
-            <path d="M830.919 13.435L830.209 12.725L833.039 9.905H834.449L830.919 13.435Z" fill="#AAAAAA"/>
-            <path d="M835.07 11.855C834.36 11.855 833.53 11.455 832.86 10.785C832.36 10.285 832 9.685 831.86 9.105C831.7 8.485 831.809 7.945 832.159 7.605L837.45 2.315L841.34 6.205L836.05 11.495C835.81 11.735 835.47 11.865 835.08 11.865L835.07 11.855Z" fill="url(#paint182_radial_1845_10698)"/>
-            <path d="M837.45 2.665L840.99 6.205C840.99 6.205 836.07 11.125 835.87 11.325C835.67 11.525 835.39 11.615 835.07 11.615C834.45 11.615 833.68 11.255 833.04 10.615C832.06 9.635 831.75 8.375 832.33 7.785C832.53 7.585 837.45 2.665 837.45 2.665ZM837.45 1.955L837.1 2.305L831.98 7.425C831.57 7.835 831.44 8.465 831.62 9.165C831.78 9.785 832.16 10.425 832.69 10.955C833.41 11.675 834.3 12.105 835.08 12.105C835.54 12.105 835.94 11.955 836.23 11.665L841.35 6.545L841.7 6.195L841.35 5.845L837.81 2.305L837.46 1.955H837.45Z" fill="#AAAAAA"/>
-            <path d="M840.979 6.195L837.439 2.655C837.439 2.655 832.519 7.575 832.319 7.775C831.729 8.365 832.049 9.625 833.029 10.605C834.009 11.585 835.269 11.895 835.859 11.315C836.059 11.115 840.979 6.195 840.979 6.195Z" fill="url(#paint183_linear_1845_10698)"/>
-            <path d="M840.73 6.205C840.02 6.205 839.19 5.805 838.52 5.135C838.02 4.635 837.66 4.035 837.52 3.455C837.36 2.835 837.47 2.295 837.82 1.945C838.06 1.705 838.4 1.575 838.79 1.575C839.5 1.575 840.33 1.975 841 2.645C842.09 3.735 842.4 5.135 841.71 5.825C841.47 6.065 841.13 6.195 840.74 6.195L840.73 6.205Z" fill="url(#paint184_radial_1845_10698)"/>
-            <path d="M838.78 1.825C839.4 1.825 840.17 2.185 840.81 2.825C841.79 3.805 842.1 5.065 841.52 5.655C841.32 5.855 841.04 5.945 840.72 5.945C840.1 5.945 839.33 5.585 838.69 4.945C837.71 3.965 837.4 2.705 837.98 2.115C838.18 1.915 838.46 1.825 838.78 1.825ZM838.78 1.325C838.32 1.325 837.92 1.475 837.63 1.765C837.22 2.175 837.09 2.805 837.27 3.505C837.43 4.125 837.81 4.765 838.34 5.295C839.06 6.015 839.95 6.445 840.73 6.445C841.19 6.445 841.59 6.295 841.88 6.005C842.67 5.215 842.36 3.655 841.17 2.465C840.45 1.745 839.56 1.315 838.78 1.315V1.325Z" fill="#AAAAAA"/>
-            <path d="M840.46 3.895L839.75 3.185L842.58 0.355H844L840.46 3.895Z" fill="#AAAAAA"/>
-        </g>
-        </svg>
-    `;
-
     const sidebar = `
         <div id="sidebarroot" class="xedx-locked">
-            <!-- div id="sb-icons">
-                <span class="icons border-dbg">
-                    ${boosterCdSvg}
-                </span>
-                <span class="icons border-dbg">
-                    ${medCdSvg}
-                </span>
-            </div -->
             <div id="sidebar-content">
                 <div id="sb-link-list"  class="sb-area ${useLiClass}">
 
@@ -160,16 +129,156 @@
         </div>
     `;
 
-    function hashChangeHandler() {
-        debug("[hashChangeHandler]: ", location.href);
-        callOnContentLoaded(handlePageLoad);
+    // =============================== Cooldown bars ======================================
+
+    const formatSecondsToTime = (totalSeconds) => {
+        let time = new Date(totalSeconds * 1000).toISOString().slice(11, 19);
+        debug("[cooldownsCallback] totalSeconds: ", totalSeconds, time);
+        return time;
+    };
+
+
+    const minPerHr = 60;
+    const maxMedCd = minPerHr * 12;
+    const maxDrugCd = minPerHr * 24;
+    const maxBoosterCd = minPerHr * 24;
+
+    //var detachedLife, detachedMedCd;
+    //var savedLife;
+    var medCdNow = 0, drugCdNow = 0, boosterCdNow = 0;
+    var medCdPct = 0, drugCdPct = 0, boosterCdPct = 0;
+    var medCdSecs = 0, boosterCdSecs = 0, drugCdSecs = 0;
+
+    var progBarTimer;
+
+    function doStats() {
+        ce_getUserStats(user_id, 'cooldowns', cooldownsCallback);
     }
 
-    function pushStateChanged(e) {
-        debug("[pushStateChanged]: ", location.href);
-        callOnContentLoaded(handlePageLoad);
+    function updateProgBar(which) {
+            switch (which) {
+                case "medical": {
+                    medCdPct = parseInt((medCdNow / +maxMedCd) * 100);
+                    $("#currentMedicalCdSb").text(secsToClock(+medCdSecs, true) + ' / ');
+                    $("#maxMedicalCdSb").text(secsToClock(+maxMedCd * 60));
+                    $("#medicalCdProgressSb").attr("style", `Width: ${medCdPct}%`);
+                    break;
+                }
+                case "booster": {
+                    boosterCdPct = parseInt((boosterCdNow / +maxBoosterCd) * 100);
+                    $("#currentBoosterCdSb").text(secsToClock(+boosterCdSecs, true) + ' / ');
+                    $("#maxBoosterCdSb").text(secsToClock(+maxBoosterCd * 60));
+                    $("#boosterCdProgressSb").attr("style", `Width: ${boosterCdPct}%`);
+                    break;
+                }
+                case "drug": {
+                    drugCdPct = parseInt((drugCdNow / +maxDrugCd) * 100);
+                    $("#currentDrugCdSb").text(secsToClock(+drugCdSecs, true) + ' / ');
+                    $("#maxDrugCdSb").text(secsToClock(+maxDrugCd * 60));
+                    $("#drugCdProgressSb").attr("style", `Width: ${drugCdPct}%`);
+                    break;
+                }
+            }
+
+            if (!progBarTimer) {
+                progBarTimer = setInterval(updateProgBarClocks, 1000);
+            }
+
+            function updateProgBarClocks() {
+                if (drugCdSecs > 0) {
+                    drugCdSecs = +drugCdSecs - 1;
+                    // bigHrs = true, showDays = false
+                    $("#currentDrugCdSb").text(secsToClock(+drugCdSecs, true, false) + ' / ');
+                }
+                if (medCdSecs > 0) {
+                    medCdSecs = +medCdSecs - 1;
+                    $("#currentMedCdSb").text(secsToClock(+medCdSecs) + ' / ');
+                }
+                if (boosterCdSecs > 0) {
+                    boosterCdSecs = +boosterCdSecs - 1;
+                    $("#currentBoosterCdSb").text(secsToClock(+boosterCdSecs) + ' / ');
+                }
+            }
+        }
+
+    function cooldownsCallback(response, status, xhr, id) {
+            const secsPerDay = 60 * 60 * 24;
+            const cdDiffSecs = (d) => { return (d.getTime() - new Date().getTime()) / 1000; }
+            const cdValid = (d) => { return (cdDiffSecs(d) > 0 && cdDiffSecs(d) < secsPerDay); }
+
+            let data = JSON.parse(response);
+            //debug("[cooldownsCallback] data: ", data);
+
+            let d = new Date(parseInt(data["drugCooldown"]) * 1000);
+            let m = new Date(parseInt(data["medicalCooldown"]));
+            let b = new Date(parseInt(data["boosterCooldown"] ));
+
+            let timeNow = new Date().getTime();
+            //debug("[cooldownsCallback]\nDrug: ", d, cdValid(d), "\nMed: ", m, cdValid(m), "\nBooster: ", b, cdValid(b));
+
+            drugCdSecs = cdDiffSecs(d);
+            medCdSecs = cdDiffSecs(m);
+            boosterCdSecs = cdDiffSecs(b);
+
+            medCdNow = parseInt(medCdSecs / 60);
+            if (medCdNow <= 0) medCdNow = 0;
+            updateProgBar("medical");
+            let cdTxt = (medCdNow == 0) ? "You have no medical cooldown." :
+                                       `You have ${secsToClock(medCdNow)} medical cooldown.`;
+
+            drugCdNow = parseInt(drugCdSecs / 60);
+            if (drugCdNow <= 0) drugCdNow = 0;
+            updateProgBar("drug");
+            cdTxt = (drugCdNow == 0) ? "You have no drug cooldown." :
+                                       `You have ${secsToClock(drugCdNow)} drug cooldown.`;
+
+            boosterCdNow = parseInt(boosterCdSecs / 60);
+            if (boosterCdNow <= 0) {
+                boosterCdNow = 0;
+            }
+            updateProgBar("booster");
+            cdTxt = (boosterCdNow == 0) ? "You have no booster cooldown." :
+                                       `You have ${secsToClock(boosterCdNow)} booster cooldown.`;
+        }
+
+    // =============================== Construct/install the sidebar ==========================
+
+    function buildSbHdr() {
+
+        let drugCdBar = getProgBarDiv("drug");
+        let medCdBar = getProgBarDiv("medical");
+        let boosterCdBar = getProgBarDiv("booster");
+
+        let newDiv = `
+            <div id="sb-top-hdr">
+                ${drugCdBar}
+                ${medCdBar}
+                ${boosterCdBar}
+            </div>
+        `;
+
+        return newDiv;
+
+        function getProgBarDiv(barName) {
+            const capName = capWord(barName);
+            let bar = `
+               <div id="${barName}CdWrapSb" title="original" data-html="true">
+                    <div class="progress-bar-title-sb">
+                        <span>${capName[0]}:</span><span id="current${capName}CdSb">22:27:51 / </span><span id="max${capName}CdSb">24:00:00</span>
+                    </div>
+                    <div class="progress progressBarStatSb">
+                        <div class="progress-bar bg-info progress-bar-striped" id="${barName}CdProgressSb" role="progressbar" style="Width: 93%" aria-valuenow="undefined" aria-valuemin="0" aria-valuemax="1440" aria-label="Current ${capName} CD"></div>
+                        <!-- div class="progress-bar-title">
+                            <span id="current${capName}CdSb">22:27:51 / </span><span id="max${capName}CdSb">24:00:00</span>
+                        </div -->
+                    </div>
+                </div>
+            `;
+            return bar;
+        }
     }
 
+    var statsTimer = 0;
     function installSidebarContents(retries=0) {
 
         if ($("#sidebarroot").length > 0) return log("Sidebar already exists!");
@@ -183,6 +292,13 @@
         $(root).css("position", "relative");
         $(root).prepend(sidebar);
         $("#contentContainer > div.row").css({"margin-left": "167px", "width": "90%"});
+
+        let topHdr = buildSbHdr();
+        $("#sidebar-content").prepend(topHdr);
+
+        doStats();
+        if (statsTimer) clearInterval(statsTimer);
+        statsTimer = setInterval(doStats, 5000);
 
         // Add event handlers
         // $('#sb-addpage').on('click', handleAddPage);
@@ -201,10 +317,19 @@
             $(target).slideToggle("slow");
             $(this).toggleClass('fa-caret-down fa-caret-right');
         }
+    }
+
+    // =========================================================================
 
 
+    function hashChangeHandler() {
+        debug("[hashChangeHandler]: ", location.href);
+        callOnContentLoaded(handlePageLoad);
+    }
 
-
+    function pushStateChanged(e) {
+        debug("[pushStateChanged]: ", location.href);
+        callOnContentLoaded(handlePageLoad);
     }
 
     function handlePageLoad(retries=0) {
@@ -220,6 +345,8 @@
 
     if ($("#sidebarroot").length > 0) return log("Sidebar already exists!");
 
+
+    validateApiKey();
     addStyles();
 
     installSidebarContents();
@@ -232,7 +359,33 @@
 
     // Add any styles here
     function addStyles() {
+
         GM_addStyle(`
+            [id*='CdWrapSb'] {
+                width: 100%;
+                /*height: 14px;*/
+                display: flex;
+                flex-direction: column;
+                padding-bottom: 4px;
+            }
+            [id*='CdProgressSb'] {
+                height: 10px;
+            }
+            progress-bar-title-sb {
+                /* text-align: center; */
+                line-height: 1.2rem;
+                font-size: 8px;
+                overflow: hidden;
+                color: #3c3c3c;
+            }
+
+            #drugCdProgressSb {
+                background-color: rgb(155, 193, 7) !important;
+            }
+            #medicalCdProgressSb {
+                background-color: #6b83d9 !important;
+            }
+
             .icons {
                 width: 32px;
                 height: 32px;
@@ -300,13 +453,15 @@
                 display: list-item;
                 list-style-type: none;
                 height: 32px;
-                border-radius: 4px;
-                margin: 1px 0px 1px 0px !important;
+                margin: 2px 0px 2px 0px !important;
                 padding: 0px 0px 0px 0px !important;
                 border-top: 1px solid #8888;
+                border-bottom: 1px solid #111;
+                border-bottom-right-radius: 5px;
+                border-top-right-radius: 5px;
             }
             #sidebarroot li.rnd-btn-3:hover {
-                transform: translate(1px, 1px);
+                transform: translate(5px, 1px);
                 background-color: #222;
             }
             #sidebarroot li.rnd-btn-3:hover a {
