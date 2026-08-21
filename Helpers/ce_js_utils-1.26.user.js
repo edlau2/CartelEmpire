@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        ce_js_utils
-// @version     1.27
+// @version     1.26
 // @namespace   http://tampermonkey.net/
 // @description Common JS functions for Cartel Empire
 // @author      xedx
@@ -68,11 +68,6 @@ const initUserId = () => {
         api_key = prompt(text, "");
         GM_setValue('api_key', api_key);
     }
-}
-
-function retry(callback, retries, maxRetries=25, interval=250, param2=null) {
-    if (++retries > maxRetries) return log("Timed out for ", callback);
-    setTimeout(callback, interval, retries);
 }
 
 // Call the callback once page content loaded (readystate is still interactive)
@@ -435,8 +430,6 @@ async function alertWithTimeout(params = defOpts) { //mainMsg, timeoutSecs, btnM
 }
 
 // ========================================================================
-
-// Date/time as mm/dd/yy, 00:00:00
 function toShortDateStr(date) {
     const mediumTime = new Intl.DateTimeFormat("en-GB", {
       timeStyle: "medium",
@@ -455,7 +448,6 @@ function toShortDateStr(date) {
     return formattedDate;
 }
 
-// 24 hour time as 00:00:00
 const tinyTimeStr = (tm) => {
     let dt = new Date(tm);
     const mediumTime = new Intl.DateTimeFormat("en-GB", {
@@ -465,7 +457,6 @@ const tinyTimeStr = (tm) => {
     return mediumTime.format(dt);
 }
 
-// Date as mm/dd/yy
 const tinyDateStr = (date, showYear=false) => {
     debug("[overview] tinyDateStr: ", date);
     const shortDate = new Intl.DateTimeFormat("en-GB", {
